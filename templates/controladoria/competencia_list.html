@@ -1,0 +1,70 @@
+{% extends "controladoria/layout_app.html" %}
+
+{% block title %}Competências{% endblock %}
+{% block page_heading %}Competências{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Gestão de períodos e competências</p>{% endblock %}
+
+{% block content %}
+<section class="filters-card glass-card">
+    <form method="get" class="filters-form">
+        <div class="filters-form__grid">
+            <div class="field">
+                <label for="q">Buscar</label>
+                <input type="search" name="q" id="q" value="{{ q }}" placeholder="Tipo">
+            </div>
+            <div class="field">
+                <label for="tipo">Tipo</label>
+                <select name="tipo" id="tipo">
+                    <option value="">Todos</option>
+                    {% for item in tipos %}
+                    <option value="{{ item.pk }}"{% if tipo == item.pk|stringformat:"s" %} selected{% endif %}>{{ item.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="filters-form__actions">
+            <button type="submit" class="btn btn--ghost btn--sm">Filtrar</button>
+            <a href="{% url 'controladoria:competencia_create' %}" class="btn btn--primary btn--sm">Nova competência</a>
+        </div>
+    </form>
+</section>
+
+<section class="table-card glass-card">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Tipo</th>
+                    <th>Competência</th>
+                    <th>Data início</th>
+                    <th>Data fim</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in competencias %}
+                <tr>
+                    <td><span class="status-pill">{{ item.tipo.nome }}</span></td>
+                    <td>{{ item.competencia|date:"d/m/Y" }}</td>
+                    <td>{{ item.data_inicio|date:"d/m/Y" }}</td>
+                    <td>{{ item.data_fim|date:"d/m/Y" }}</td>
+                    <td class="actions-cell">
+                        <a href="{% url 'controladoria:competencia_edit' item.pk %}" class="btn btn--ghost btn--sm">Editar</a>
+                        <a href="{% url 'controladoria:competencia_delete' item.pk %}" class="btn btn--ghost btn--sm btn--danger">Excluir</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="empty-row">Nenhuma competência cadastrada.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if is_paginated %}
+    <div class="pagination">
+        {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&q={{ q }}&tipo={{ tipo }}">Anterior</a>{% endif %}
+        <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}&q={{ q }}&tipo={{ tipo }}">Próxima</a>{% endif %}
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

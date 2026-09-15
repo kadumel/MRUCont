@@ -1,0 +1,51 @@
+{% extends "controladoria/layout_app.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block page_heading %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Altere somente a nova data e o novo valor do ajuste</p>{% endblock %}
+
+{% block content %}
+<section class="info-banner glass-card">
+    <p><strong>Medida:</strong> {{ form.instance.medida.nome }}</p>
+</section>
+
+<section class="form-card glass-card">
+    {% if form.instance.data_original or form.instance.valor_original != None %}
+    <h2 class="form-section-title">Valores originais</h2>
+    <p class="text-muted form-section-help">Referência do lançamento excluído antes do ajuste.</p>
+    <dl class="detail-grid detail-grid--highlight">
+        <div><dt>Data original</dt><dd>{% if form.instance.data_original %}{{ form.instance.data_original|date:"d/m/Y" }}{% else %}—{% endif %}</dd></div>
+        <div><dt>Valor original</dt><dd>{% if form.instance.valor_original != None %}{{ form.instance.valor_original|floatformat:2 }}{% else %}—{% endif %}</dd></div>
+    </dl>
+    {% endif %}
+
+    <h2 class="form-section-title">Dados do lançamento</h2>
+    <dl class="detail-grid">
+        <div><dt>Empresa</dt><dd>{{ form.instance.cd_empresa|default:"—" }}</dd></div>
+        <div><dt>Empreendimento</dt><dd>{{ form.instance.cd_empreendimento|default:"—" }}</dd></div>
+        <div><dt>Núcleo</dt><dd>{{ form.instance.cd_nucleo|default:"—" }}</dd></div>
+        <div><dt>Centro</dt><dd>{{ form.instance.cd_centro|default:"—" }}</dd></div>
+        <div class="detail-grid__full"><dt>Conta / Chave</dt><dd>{{ form.instance.chave_orc|default:"—" }}</dd></div>
+    </dl>
+
+    <form method="post" class="entity-form" novalidate>
+        {% csrf_token %}
+        <h2 class="form-section-title">Ajuste do lançamento</h2>
+        <p class="text-muted form-section-help">Informe a nova data e o novo valor do ajuste.</p>
+        <div class="form-grid">
+            {% for field in form %}
+            <div class="field{% if field.errors %} field--error{% endif %}">
+                <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+                {{ field }}
+                {% if field.help_text %}<p class="field-help">{{ field.help_text }}</p>{% endif %}
+                {% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+        <div class="form-actions">
+            <a href="{% if cancel_url %}{{ cancel_url }}{% else %}{% url 'controladoria:ajuste_list' %}{% endif %}" class="btn btn--ghost">Cancelar</a>
+            <button type="submit" class="btn btn--primary">Salvar</button>
+        </div>
+    </form>
+</section>
+{% endblock %}

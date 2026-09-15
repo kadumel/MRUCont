@@ -1,0 +1,51 @@
+<section class="filtro-secao filtro-secao--{{ secao }}">
+    <div class="filtro-secao__header">
+        <h3>{{ titulo }}</h3>
+        {% if descricao %}<p class="section-help">{{ descricao }}</p>{% endif %}
+    </div>
+
+    <div class="field field--inline field--operador-raiz"{% if grupos|length < 2 %} hidden{% endif %}>
+        <label for="id_{{ secao }}_operador_raiz">Combinação entre grupos</label>
+        <select name="{{ secao }}_operador_raiz" id="id_{{ secao }}_operador_raiz" class="input input--sm operador-raiz-select">
+            {% for val, label in operador_raiz_choices %}
+            <option value="{{ val }}"{% if operador == val %} selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <p class="field-help">Só com 2 ou mais grupos: OU = basta um; E = todos ao mesmo tempo.</p>
+    </div>
+
+    <input type="hidden" name="{{ secao }}_grupo_count" class="grupo-count-input" value="{{ grupos|length|default:0 }}">
+
+    <div id="grupos-{{ secao }}-container" class="grupos-builder" data-grupos-secao="{{ secao }}">
+        {% for grupo in grupos %}
+        <div class="filtro-grupo" data-grupo-index="{{ forloop.counter0 }}">
+            <div class="filtro-grupo__header">
+                <strong>Grupo {{ forloop.counter }}</strong>
+                <div class="field field--inline">
+                    <label>Condições do grupo</label>
+                    <select name="{{ secao }}_grupo_{{ forloop.counter0 }}_operador_logico" class="input input--sm">
+                        <option value="and"{% if grupo.operador == 'and' %} selected{% endif %}>E (AND)</option>
+                        <option value="or"{% if grupo.operador == 'or' %} selected{% endif %}>OU (OR)</option>
+                    </select>
+                </div>
+                <button type="button" class="btn btn--ghost btn--sm btn-remover-grupo" title="Remover grupo">✕ Grupo</button>
+            </div>
+            <div class="filtros-builder filtros-builder--nested">
+                {% for filtro in grupo.itens %}
+                {% include "controladoria/includes/filtro_linha.html" with secao=secao grupo_idx=forloop.parentloop.counter0 campo=filtro.campo operador=filtro.operador valores=filtro.valores %}
+                {% empty %}
+                {% include "controladoria/includes/filtro_linha.html" with secao=secao grupo_idx=forloop.counter0 campo='Assunto' operador='in' valores='' %}
+                {% endfor %}
+            </div>
+            <button type="button" class="btn btn--ghost btn--sm btn-add-filtro">+ Condição no grupo</button>
+        </div>
+        {% if not forloop.last %}
+        <div class="filtro-grupo-sep">{% if operador == 'and' %}E{% else %}OU{% endif %}</div>
+        {% endif %}
+        {% empty %}
+        <p class="section-help filtro-secao__vazio">Nenhum grupo — clique em "+ Adicionar grupo".</p>
+        {% endfor %}
+    </div>
+
+    <button type="button" class="btn btn--ghost btn--sm btn-add-grupo" data-secao="{{ secao }}">+ Adicionar grupo</button>
+</section>

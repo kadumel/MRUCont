@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Entrar{% endblock %}
+{% block body_class %}page-login{% endblock %}
+
+{% block body %}
+<div class="login-shell">
+    <aside class="login-visual">
+        <div class="login-visual__content">
+            <div class="brand-mark">
+                {% include "controladoria/includes/brand_logo.html" %}
+            </div>
+            <h1 class="login-visual__title">
+                Regras de medidas<br>
+                <strong>para o BI</strong>
+            </h1>
+            <p class="login-visual__text">
+                Cadastre medidas, regras, exceções e ajustes manuais sobre a FatoResultadoFinanceiroQ12.
+            </p>
+        </div>
+    </aside>
+
+    <main class="login-panel">
+        <div class="login-form-wrap">
+            <header class="login-form__header">
+                <h2>Acesse o sistema</h2>
+                <p class="login-form__subtitle">Controladoria — configuração de medidas BI</p>
+            </header>
+
+            {% if form.errors %}
+            <div class="alert alert--error" role="alert">
+                Usuário ou senha inválidos. Tente novamente.
+            </div>
+            {% endif %}
+
+            <form method="post" class="login-form" novalidate>
+                {% csrf_token %}
+                <div class="field">
+                    <label for="id_username">Usuário</label>
+                    <input type="text" name="username" id="id_username" autocomplete="username" required autofocus placeholder="seu.usuario">
+                </div>
+                <div class="field field--password">
+                    <label for="id_password">Senha</label>
+                    <div class="password-field">
+                        <input type="password" name="password" id="id_password" autocomplete="current-password" required placeholder="••••••••">
+                        <button type="button" class="password-field__toggle" id="password-toggle" aria-label="Mostrar senha">
+                            <span class="password-field__label">Mostrar</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="login-form__options">
+                    <label class="login-form__remember">
+                        <input type="checkbox" name="remember_me" value="1">
+                        <span>Manter conectado</span>
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn--primary btn--full">Entrar</button>
+            </form>
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/login.js' %}" defer></script>
+{% endblock %}

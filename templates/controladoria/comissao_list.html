@@ -1,0 +1,363 @@
+{% extends "controladoria/layout_app.html" %}
+{% load l10n static %}
+
+{% block title %}Comissões{% endblock %}
+{% block page_heading %}Gestão de comissões{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Consulte parcerias no DW e inclua comissões para pagamento</p>{% endblock %}
+
+{% block content %}
+<section class="filters-card glass-card">
+    <form method="get" class="filters-form">
+        <input type="hidden" name="tab" value="consulta">
+        <div class="filters-form__grid">
+            <div class="field">
+                <label for="data_corte">Data de corte *</label>
+                <input type="date" name="data_corte" id="data_corte" class="input" value="{{ data_corte }}" required>
+                <small class="field-help">Pagamentos realizados até esta data</small>
+            </div>
+            <div class="field">
+                <label for="mes_fechamento">Mês fechamento</label>
+                <select name="mes_fechamento" id="mes_fechamento" class="input">
+                    <option value="">Todos</option>
+                    <option value="1"{% if mes_fechamento == "1" %} selected{% endif %}>Janeiro</option>
+                    <option value="2"{% if mes_fechamento == "2" %} selected{% endif %}>Fevereiro</option>
+                    <option value="3"{% if mes_fechamento == "3" %} selected{% endif %}>Março</option>
+                    <option value="4"{% if mes_fechamento == "4" %} selected{% endif %}>Abril</option>
+                    <option value="5"{% if mes_fechamento == "5" %} selected{% endif %}>Maio</option>
+                    <option value="6"{% if mes_fechamento == "6" %} selected{% endif %}>Junho</option>
+                    <option value="7"{% if mes_fechamento == "7" %} selected{% endif %}>Julho</option>
+                    <option value="8"{% if mes_fechamento == "8" %} selected{% endif %}>Agosto</option>
+                    <option value="9"{% if mes_fechamento == "9" %} selected{% endif %}>Setembro</option>
+                    <option value="10"{% if mes_fechamento == "10" %} selected{% endif %}>Outubro</option>
+                    <option value="11"{% if mes_fechamento == "11" %} selected{% endif %}>Novembro</option>
+                    <option value="12"{% if mes_fechamento == "12" %} selected{% endif %}>Dezembro</option>
+                </select>
+            </div>
+            <div class="field">
+                <label for="ano_fechamento">Ano fechamento</label>
+                <input type="number" name="ano_fechamento" id="ano_fechamento" class="input" value="{{ ano_fechamento }}" min="2000" max="2100" placeholder="Ex.: 2026">
+                <small class="field-help">Opcional — filtra contratos pelo mês/ano de fechamento</small>
+            </div>
+            <div class="field">
+                <label for="status_elegibilidade">Elegibilidade pagamento</label>
+                <select name="status_elegibilidade" id="status_elegibilidade" class="input">
+                    <option value="todos"{% if status_elegibilidade == "todos" %} selected{% endif %}>Todos</option>
+                    <option value="atingiu"{% if status_elegibilidade == "atingiu" %} selected{% endif %}>Atingiu (liquidado ≥ comissão)</option>
+                    <option value="nao_atingiu"{% if status_elegibilidade == "nao_atingiu" %} selected{% endif %}>Não atingiu</option>
+                </select>
+                <small class="field-help">Verde = pode pagar; vermelho = liquidado ainda insuficiente</small>
+            </div>
+        </div>
+        <div class="filters-form__actions">
+            <button type="submit" class="btn btn--primary btn--sm">Consultar DW</button>
+        </div>
+    </form>
+</section>
+
+{% if erro %}
+<div class="alert alert--error">{{ erro }}</div>
+{% endif %}
+
+<section class="tabs-card glass-card">
+    <nav class="tabs-nav" aria-label="Consulta e comissões incluídas">
+        <a
+            href="?{{ query_consulta }}"
+            class="tabs-nav__item js-comissao-tab{% if tab_ativa == 'consulta' %} tabs-nav__item--active{% endif %}"
+            data-tab="consulta"
+            {% if tab_ativa == 'consulta' %}aria-current="page"{% endif %}
+        >
+            Consulta DW
+            {% if resultado %}
+            <span class="tabs-nav__badge">{{ resultado.total }}</span>
+            {% endif %}
+        </a>
+        <a
+            href="?{{ query_incluidas }}"
+            class="tabs-nav__item js-comissao-tab{% if tab_ativa == 'incluidas' %} tabs-nav__item--active{% endif %}"
+            data-tab="incluidas"
+            {% if tab_ativa == 'incluidas' %}aria-current="page"{% endif %}
+        >
+            Comissões incluídas
+            <span class="tabs-nav__badge">{{ comissoes_incluidas|length }}</span>
+        </a>
+    </nav>
+
+    <div class="tabs-panel js-comissao-panel" data-tab="consulta"{% if tab_ativa != 'consulta' %} hidden{% endif %}>
+        {% if resultado %}
+        <div class="tabs-panel__header">
+            <h2>Contratos elegíveis</h2>
+            <span class="table-meta">{{ resultado.total }} registro(s) — exclui contratos já incluídos</span>
+        </div>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Empresa</th>
+                        <th>Contrato</th>
+                        <th>Cliente</th>
+                        <th>Venda à vista</th>
+                        <th>Liquidado</th>
+                        <th>%</th>
+                        <th>Comissão</th>
+                        <th title="Liquidado maior ou igual à comissão">Pagamento</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in resultado.registros %}
+                    <tr>
+                        <td>{% if item.data_contrato_fmt %}{{ item.data_contrato_fmt|date:"d/m/Y" }}{% else %}—{% endif %}</td>
+                        <td>{{ item.cd_empresa|default:"—" }}</td>
+                        <td>{{ item.cd_contrato|default:"—" }}</td>
+                        <td>{{ item.cliente|default:"—"|truncatechars:30 }}</td>
+                        <td>{% if item.valor_venda_a_vista != None %}{{ item.valor_venda_a_vista|floatformat:2 }}{% else %}—{% endif %}</td>
+                        <td>{% if item.liquidado != None %}{{ item.liquidado|floatformat:2 }}{% else %}—{% endif %}</td>
+                        <td>{% if item.percentual_pct != None %}{{ item.percentual_pct|floatformat:2 }}%{% else %}—{% endif %}</td>
+                        <td>{% if item.comissao != None %}{{ item.comissao|floatformat:2 }}{% else %}—{% endif %}</td>
+                        <td class="cell-status-icon">
+                            {% if item.elegivel_pagamento %}
+                            <span class="status-icon status-icon--ok" title="Liquidado ≥ comissão — elegível para pagamento">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.75"/>
+                                    <path d="M8 12.5l2.5 2.5L16 9.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                <span class="sr-only">Elegível para pagamento</span>
+                            </span>
+                            {% else %}
+                            <span class="status-icon status-icon--fail" title="Liquidado &lt; comissão — ainda não elegível">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.75"/>
+                                    <path d="M8 8l8 8M16 8l-8 8" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+                                </svg>
+                                <span class="sr-only">Não elegível para pagamento</span>
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="actions-cell">
+                            {% if item.elegivel_pagamento %}
+                            <button
+                                type="button"
+                                class="btn btn--primary btn--sm js-incluir-comissao"
+                                data-cd-contrato="{{ item.cd_contrato }}"
+                                data-data-contrato="{% if item.data_contrato_fmt %}{{ item.data_contrato_fmt|date:'Y-m-d' }}{% endif %}"
+                                data-cd-empresa="{{ item.cd_empresa|default:'' }}"
+                                data-contrato="{{ item.contrato|default:'' }}"
+                                data-situacao="{{ item.situacao|default:'' }}"
+                                data-cd-cliente="{{ item.cd_cliente|default:'' }}"
+                                data-cliente="{{ item.cliente|default:'' }}"
+                                data-valor-tabela-primeira="{% if item.valor_tabela_primeira != None %}{% localize off %}{{ item.valor_tabela_primeira }}{% endlocalize %}{% endif %}"
+                                data-valor-tabela-venda="{% if item.valor_tabela_venda != None %}{% localize off %}{{ item.valor_tabela_venda }}{% endlocalize %}{% endif %}"
+                                data-valor-venda-a-vista="{% if item.valor_venda_a_vista != None %}{% localize off %}{{ item.valor_venda_a_vista }}{% endlocalize %}{% endif %}"
+                                data-desconto="{% if item.desconto != None %}{% localize off %}{{ item.desconto }}{% endlocalize %}{% endif %}"
+                                data-liquidado="{% if item.liquidado != None %}{% localize off %}{{ item.liquidado }}{% endlocalize %}{% endif %}"
+                                data-percentual="{% if item.percentual != None %}{% localize off %}{{ item.percentual }}{% endlocalize %}{% endif %}"
+                                data-comissao="{% if item.comissao != None %}{% localize off %}{{ item.comissao }}{% endlocalize %}{% endif %}"
+                            >
+                                Incluir comissão
+                            </button>
+                            {% else %}
+                            <span class="status-pill status-pill--inativo" title="Liquidado insuficiente para pagamento">Aguardando</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="10" class="empty-row">Nenhum contrato encontrado para os filtros informados.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if resultado.total_paginas > 1 %}
+        <div class="pagination">
+            {% if pagina > 1 %}
+            <a href="?{{ query_consulta }}&page={{ pagina|add:'-1' }}">Anterior</a>
+            {% endif %}
+            <span>Página {{ pagina }} de {{ resultado.total_paginas }}</span>
+            {% if pagina < resultado.total_paginas %}
+            <a href="?{{ query_consulta }}&page={{ pagina|add:'1' }}">Próxima</a>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% elif data_corte and not erro %}
+        <p class="tabs-panel__empty">Informe a data de corte e clique em <strong>Consultar DW</strong>.</p>
+        {% else %}
+        <p class="tabs-panel__empty">Informe a <strong>data de corte</strong> (obrigatória) para consultar comissões no DW.</p>
+        {% endif %}
+    </div>
+
+    <div class="tabs-panel js-comissao-panel" data-tab="incluidas"{% if tab_ativa != 'incluidas' %} hidden{% endif %}>
+        <div class="tabs-panel__header">
+            <h2>Comissões incluídas para pagamento</h2>
+            <span class="table-meta">{{ comissoes_incluidas|length }} registro(s) recentes</span>
+        </div>
+        {% if comissoes_incluidas %}
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Contrato</th>
+                        <th>Empresa</th>
+                        <th>Cliente</th>
+                        <th>Comissão</th>
+                        <th>Data pagamento</th>
+                        <th>Data corte</th>
+                        <th>Incluída em</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in comissoes_incluidas %}
+                    <tr>
+                        <td>{{ item.cd_contrato }}</td>
+                        <td>{{ item.cd_empresa }}</td>
+                        <td>{{ item.cliente|truncatechars:30 }}</td>
+                        <td>{% if item.comissao != None %}{{ item.comissao|floatformat:2 }}{% else %}—{% endif %}</td>
+                        <td>{{ item.data_pagamento|date:"d/m/Y" }}</td>
+                        <td>{{ item.data_corte|date:"d/m/Y" }}</td>
+                        <td>{{ item.criado_em|date:"d/m/Y H:i" }}</td>
+                        <td class="actions-cell actions-cell--inline">
+                            <button
+                                type="button"
+                                class="btn-icon btn-icon--primary js-editar-comissao"
+                                title="Editar"
+                                data-comissao-id="{{ item.pk }}"
+                                data-cd-contrato="{{ item.cd_contrato }}"
+                                data-cliente="{{ item.cliente|default:'' }}"
+                                data-data-pagamento="{{ item.data_pagamento|date:'Y-m-d' }}"
+                                data-action-url="{% url 'controladoria:comissao_atualizar_pagamento' item.pk %}"
+                            >
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                    <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                <span class="sr-only">Editar</span>
+                            </button>
+                            <button
+                                type="button"
+                                class="btn-icon btn-icon--danger js-excluir-comissao"
+                                title="Excluir"
+                                data-comissao-id="{{ item.pk }}"
+                                data-cd-contrato="{{ item.cd_contrato }}"
+                                data-action-url="{% url 'controladoria:comissao_excluir' item.pk %}"
+                            >
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.75"/>
+                                    <path d="M8 8l8 8M16 8l-8 8" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+                                </svg>
+                                <span class="sr-only">Excluir</span>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="tabs-panel__empty">Nenhuma comissão incluída ainda.</p>
+        {% endif %}
+    </div>
+</section>
+
+<div class="modal" id="modal-comissao" hidden aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+    <div class="modal__dialog glass-card" role="dialog" aria-modal="true" aria-labelledby="modal-comissao-title">
+        <header class="modal__header">
+            <h2 id="modal-comissao-title">Incluir comissão</h2>
+            <button type="button" class="modal__close" data-modal-close aria-label="Fechar">&times;</button>
+        </header>
+        <form method="post" action="{% url 'controladoria:comissao_incluir' %}" id="form-incluir-comissao">
+            {% csrf_token %}
+            <input type="hidden" name="data_corte" value="{{ data_corte }}">
+            <input type="hidden" name="mes_fechamento" value="{{ mes_fechamento }}">
+            <input type="hidden" name="ano_fechamento" value="{{ ano_fechamento }}">
+            <input type="hidden" name="status_elegibilidade_retorno" value="{{ status_elegibilidade }}">
+            <input type="hidden" name="page_retorno" value="{{ pagina }}">
+            <input type="hidden" name="cd_contrato" id="field-cd-contrato">
+            <input type="hidden" name="data_contrato" id="field-data-contrato">
+            <input type="hidden" name="cd_empresa" id="field-cd-empresa">
+            <input type="hidden" name="contrato" id="field-contrato">
+            <input type="hidden" name="situacao" id="field-situacao">
+            <input type="hidden" name="cd_cliente" id="field-cd-cliente">
+            <input type="hidden" name="cliente" id="field-cliente">
+            <input type="hidden" name="valor_tabela_primeira" id="field-valor-tabela-primeira">
+            <input type="hidden" name="valor_tabela_venda" id="field-valor-tabela-venda">
+            <input type="hidden" name="valor_venda_a_vista" id="field-valor-venda-a-vista">
+            <input type="hidden" name="desconto" id="field-desconto">
+            <input type="hidden" name="liquidado" id="field-liquidado">
+            <input type="hidden" name="percentual" id="field-percentual">
+            <input type="hidden" name="comissao" id="field-comissao">
+
+            <div class="modal__body">
+                <p class="modal__summary"><strong id="modal-contrato-label"></strong></p>
+                <p class="text-muted" id="modal-cliente-label"></p>
+                <div class="field">
+                    <label for="data_pagamento">Data de pagamento *</label>
+                    <input type="date" name="data_pagamento" id="data_pagamento" class="input" required>
+                </div>
+            </div>
+            <footer class="modal__footer">
+                <button type="button" class="btn btn--ghost btn--sm" data-modal-close>Cancelar</button>
+                <button type="submit" class="btn btn--primary btn--sm">Confirmar inclusão</button>
+            </footer>
+        </form>
+    </div>
+</div>
+
+<div class="modal" id="modal-editar-comissao" hidden aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+    <div class="modal__dialog glass-card" role="dialog" aria-modal="true" aria-labelledby="modal-editar-title">
+        <header class="modal__header">
+            <h2 id="modal-editar-title">Editar data de pagamento</h2>
+            <button type="button" class="modal__close" data-modal-close aria-label="Fechar">&times;</button>
+        </header>
+        <form method="post" action="" id="form-editar-comissao">
+            {% csrf_token %}
+            <input type="hidden" name="data_corte_retorno" value="{{ data_corte }}">
+            <input type="hidden" name="mes_fechamento_retorno" value="{{ mes_fechamento }}">
+            <input type="hidden" name="ano_fechamento_retorno" value="{{ ano_fechamento }}">
+            <input type="hidden" name="status_elegibilidade_retorno" value="{{ status_elegibilidade }}">
+            <div class="modal__body">
+                <p class="modal__summary"><strong id="modal-editar-contrato-label"></strong></p>
+                <p class="text-muted" id="modal-editar-cliente-label"></p>
+                <div class="field">
+                    <label for="editar_data_pagamento">Data de pagamento *</label>
+                    <input type="date" name="data_pagamento" id="editar_data_pagamento" class="input" required>
+                </div>
+            </div>
+            <footer class="modal__footer">
+                <button type="button" class="btn btn--ghost btn--sm" data-modal-close>Cancelar</button>
+                <button type="submit" class="btn btn--primary btn--sm">Salvar</button>
+            </footer>
+        </form>
+    </div>
+</div>
+
+<div class="modal" id="modal-excluir-comissao" hidden aria-hidden="true">
+    <div class="modal__backdrop" data-modal-close></div>
+    <div class="modal__dialog glass-card" role="dialog" aria-modal="true" aria-labelledby="modal-excluir-title">
+        <header class="modal__header">
+            <h2 id="modal-excluir-title">Excluir comissão</h2>
+            <button type="button" class="modal__close" data-modal-close aria-label="Fechar">&times;</button>
+        </header>
+        <form method="post" action="" id="form-excluir-comissao">
+            {% csrf_token %}
+            <input type="hidden" name="data_corte_retorno" value="{{ data_corte }}">
+            <input type="hidden" name="mes_fechamento_retorno" value="{{ mes_fechamento }}">
+            <input type="hidden" name="ano_fechamento_retorno" value="{{ ano_fechamento }}">
+            <input type="hidden" name="status_elegibilidade_retorno" value="{{ status_elegibilidade }}">
+            <div class="modal__body">
+                <p>Tem certeza que deseja excluir a comissão do contrato <strong id="modal-excluir-contrato-label"></strong>?</p>
+                <p class="text-muted">O contrato voltará a aparecer na consulta DW.</p>
+            </div>
+            <footer class="modal__footer">
+                <button type="button" class="btn btn--ghost btn--sm" data-modal-close>Cancelar</button>
+                <button type="submit" class="btn btn--primary btn--sm btn--danger">Confirmar exclusão</button>
+            </footer>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/comissao_list.js' %}"></script>
+{% endblock %}

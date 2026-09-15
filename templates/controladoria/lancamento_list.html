@@ -1,0 +1,94 @@
+{% extends "controladoria/layout_app.html" %}
+
+{% block title %}Lançamentos{% endblock %}
+{% block page_heading %}Lançamentos{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Movimentos financeiros por empreendimento e sócio</p>{% endblock %}
+
+{% block content %}
+<section class="filters-card glass-card">
+    <form method="get" class="filters-form">
+        <div class="filters-form__grid">
+            <div class="field">
+                <label for="q">Buscar</label>
+                <input type="search" name="q" id="q" value="{{ q }}" placeholder="Conta, sócio, empreendimento ou observação">
+            </div>
+            <div class="field">
+                <label for="conta">Conta</label>
+                <select name="conta" id="conta">
+                    <option value="">Todas</option>
+                    {% for item in contas %}
+                    <option value="{{ item.pk }}"{% if conta == item.pk|stringformat:"s" %} selected{% endif %}>{{ item }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label for="empreendimento">Empreendimento</label>
+                <select name="empreendimento" id="empreendimento">
+                    <option value="">Todos</option>
+                    {% for item in empreendimentos %}
+                    <option value="{{ item.pk }}"{% if empreendimento == item.pk|stringformat:"s" %} selected{% endif %}>{{ item }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label for="socio">Sócio</label>
+                <select name="socio" id="socio">
+                    <option value="">Todos</option>
+                    {% for item in socios %}
+                    <option value="{{ item.pk }}"{% if socio == item.pk|stringformat:"s" %} selected{% endif %}>{{ item.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="filters-form__actions">
+            <button type="submit" class="btn btn--ghost btn--sm">Filtrar</button>
+            <a href="{% url 'controladoria:lancamento_create' %}" class="btn btn--primary btn--sm">Novo lançamento</a>
+        </div>
+    </form>
+</section>
+
+<section class="table-card glass-card">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Competência</th>
+                    <th>Conta</th>
+                    <th>Tipo</th>
+                    <th>Empreendimento</th>
+                    <th>Sócio</th>
+                    <th>Valor</th>
+                    <th>Observação</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for lancamento in lancamentos %}
+                <tr>
+                    <td>{{ lancamento.data_competencia|date:"d/m/Y" }}</td>
+                    <td>{{ lancamento.conta.nome }}</td>
+                    <td><span class="status-pill">{{ lancamento.conta.get_tipo_display }}</span></td>
+                    <td>{{ lancamento.empreendimento }}</td>
+                    <td>{{ lancamento.socio.nome }}</td>
+                    <td>{{ lancamento.valor }}</td>
+                    <td>{% if lancamento.observacao %}{{ lancamento.observacao|truncatechars:60 }}{% else %}—{% endif %}</td>
+                    <td class="actions-cell">
+                        <a href="{% url 'controladoria:lancamento_edit' lancamento.pk %}" class="btn btn--ghost btn--sm">Editar</a>
+                        <a href="{% url 'controladoria:lancamento_delete' lancamento.pk %}" class="btn btn--ghost btn--sm btn--danger">Excluir</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="8" class="empty-row">Nenhum lançamento cadastrado.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if is_paginated %}
+    <div class="pagination">
+        {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&q={{ q }}&conta={{ conta }}&empreendimento={{ empreendimento }}&socio={{ socio }}">Anterior</a>{% endif %}
+        <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}&q={{ q }}&conta={{ conta }}&empreendimento={{ empreendimento }}&socio={{ socio }}">Próxima</a>{% endif %}
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends "controladoria/layout_app.html" %}
+
+{% block title %}Contas Financeiras{% endblock %}
+{% block page_heading %}Contas Financeiras{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Cadastro de tipos de conta — crédito ou débito</p>{% endblock %}
+
+{% block content %}
+<section class="filters-card glass-card">
+    <form method="get" class="filters-form">
+        <div class="filters-form__grid">
+            <div class="field">
+                <label for="q">Buscar</label>
+                <input type="search" name="q" id="q" value="{{ q }}" placeholder="Nome ou descrição">
+            </div>
+            <div class="field">
+                <label for="tipo">Tipo</label>
+                <select name="tipo" id="tipo">
+                    <option value="">Todos</option>
+                    {% for value, label in tipos_conta %}
+                    <option value="{{ value }}"{% if tipo == value %} selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label for="ativo">Status</label>
+                <select name="ativo" id="ativo">
+                    <option value="">Todos</option>
+                    <option value="1"{% if ativo == '1' %} selected{% endif %}>Ativo</option>
+                    <option value="0"{% if ativo == '0' %} selected{% endif %}>Inativo</option>
+                </select>
+            </div>
+        </div>
+        <div class="filters-form__actions">
+            <button type="submit" class="btn btn--ghost btn--sm">Filtrar</button>
+            <a href="{% url 'controladoria:conta_financeira_create' %}" class="btn btn--primary btn--sm">Nova conta</a>
+        </div>
+    </form>
+</section>
+
+<section class="table-card glass-card">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Tipo</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for conta in contas %}
+                <tr>
+                    <td>{{ conta.nome }}</td>
+                    <td><span class="status-pill">{{ conta.get_tipo_display }}</span></td>
+                    <td>
+                        {% if conta.ativo %}
+                        <span class="status-pill status-pill--ok">Ativo</span>
+                        {% else %}
+                        <span class="status-pill">Inativo</span>
+                        {% endif %}
+                    </td>
+                    <td class="actions-cell">
+                        <a href="{% url 'controladoria:conta_financeira_edit' conta.pk %}" class="btn btn--ghost btn--sm">Editar</a>
+                        <a href="{% url 'controladoria:conta_financeira_delete' conta.pk %}" class="btn btn--ghost btn--sm btn--danger">Excluir</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="empty-row">Nenhuma conta financeira cadastrada.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if is_paginated %}
+    <div class="pagination">
+        {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&q={{ q }}&tipo={{ tipo }}&ativo={{ ativo }}">Anterior</a>{% endif %}
+        <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}&q={{ q }}&tipo={{ tipo }}&ativo={{ ativo }}">Próxima</a>{% endif %}
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

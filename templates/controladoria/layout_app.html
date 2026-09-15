@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block body_class %}page-app{% endblock %}
+
+{% block body %}
+<div class="app-layout">
+    {% include "controladoria/includes/sidebar.html" %}
+    <main class="main-content">
+        <header class="topbar">
+            <div class="topbar__title">
+                <h1>{% block page_heading %}Controladoria BI{% endblock %}</h1>
+                {% block page_subtitle %}{% endblock %}
+            </div>
+            <div class="topbar__actions">
+                <span class="user-chip">{{ current_user.get_username }}</span>
+                <form method="post" action="{% url 'controladoria:logout' %}" class="logout-form">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn--ghost btn--sm">Sair</button>
+                </form>
+            </div>
+        </header>
+
+        {% include "controladoria/includes/messages.html" %}
+        {% block content %}{% endblock %}
+    </main>
+</div>
+{% endblock %}

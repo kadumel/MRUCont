@@ -1,0 +1,126 @@
+{% extends "controladoria/layout_app.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block page_heading %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Defina quando e como os lançamentos entram na medida</p>{% endblock %}
+
+{% block content %}
+<section class="form-card glass-card">
+    <form method="post" class="entity-form regra-form" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="alert alert--error">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <fieldset class="form-section">
+            <legend>1. Identificação</legend>
+            <div class="form-grid">
+                <div class="field{% if form.medida.errors %} field--error{% endif %}">
+                    <label for="{{ form.medida.id_for_label }}">Medida *</label>
+                    {{ form.medida }}
+                    {% for e in form.medida.errors %}<p class="field-error">{{ e }}</p>{% endfor %}
+                </div>
+                <div class="field{% if form.nome.errors %} field--error{% endif %}">
+                    <label for="{{ form.nome.id_for_label }}">Nome da regra *</label>
+                    {{ form.nome }}
+                    {% for e in form.nome.errors %}<p class="field-error">{{ e }}</p>{% endfor %}
+                </div>
+                <div class="field field--full{% if form.descricao.errors %} field--error{% endif %}">
+                    <label for="{{ form.descricao.id_for_label }}">Descrição</label>
+                    {{ form.descricao }}
+                </div>
+                <div class="field field--checkbox">
+                    <label class="checkbox-label">{{ form.ativo }} Regra ativa</label>
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset class="form-section">
+            <legend>2. Quando buscar lançamentos</legend>
+            <p class="section-help">
+                Use <strong>Incluir</strong> e <strong>Desconsiderar</strong> na mesma regra.
+                Cada bloco usa <code>DimEmpresa</code> (Segmento) e <code>DimSubGrupo</code> (Nome SubGrupo) automaticamente.
+            </p>
+
+            {% include "controladoria/includes/filtro_grupos_section.html" with secao="incluir" titulo="Incluir lançamentos quando" descricao="Somente entram lançamentos que atendem a estes grupos (se houver algum)." grupos=filtros_grupos.incluir.grupos operador=filtros_grupos.incluir.operador operador_raiz_choices=operador_raiz_choices %}
+
+            {% include "controladoria/includes/filtro_grupos_section.html" with secao="excluir" titulo="Desconsiderar lançamentos quando" descricao="Remove lançamentos que atendem a estes grupos, mesmo que passem nos filtros de inclusão." grupos=filtros_grupos.excluir.grupos operador=filtros_grupos.excluir.operador operador_raiz_choices=operador_raiz_choices %}
+
+            <div class="form-grid form-grid--spaced">
+                <div class="field{% if form.ano_minimo.errors %} field--error{% endif %}">
+                    <label for="{{ form.ano_minimo.id_for_label }}">{{ form.ano_minimo.label }}</label>
+                    {{ form.ano_minimo }}
+                    <p class="field-help">Somente lançamentos a partir deste ano.</p>
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset class="form-section">
+            <legend>3. Como calcular e agrupar</legend>
+            <div class="form-grid">
+                <div class="field{% if form.funcao_agregacao.errors %} field--error{% endif %}">
+                    <label for="{{ form.funcao_agregacao.id_for_label }}">{{ form.funcao_agregacao.label }}</label>
+                    {{ form.funcao_agregacao }}
+                </div>
+                <div class="field{% if form.campo_agregacao.errors %} field--error{% endif %}">
+                    <label for="{{ form.campo_agregacao.id_for_label }}">{{ form.campo_agregacao.label }}</label>
+                    {{ form.campo_agregacao }}
+                </div>
+            </div>
+
+            <div class="field{% if form.agrupamentos.errors %} field--error{% endif %}">
+                <span class="field-label">{{ form.agrupamentos.label }} *</span>
+                <div class="checkbox-grid">
+                    {% for checkbox in form.agrupamentos %}
+                    <label class="checkbox-label">{{ checkbox.tag }} {{ checkbox.choice_label }}</label>
+                    {% endfor %}
+                </div>
+                {% if form.agrupamentos.help_text %}<p class="field-help">{{ form.agrupamentos.help_text }}</p>{% endif %}
+                {% for e in form.agrupamentos.errors %}<p class="field-error">{{ e }}</p>{% endfor %}
+            </div>
+        </fieldset>
+
+        <details class="form-section form-section--advanced">
+            <summary>Opções avançadas (opcional)</summary>
+            <div class="field field--full{% if form.sql_extra.errors %} field--error{% endif %}">
+                <label for="{{ form.sql_extra.id_for_label }}">{{ form.sql_extra.label }}</label>
+                {{ form.sql_extra }}
+                <p class="field-help">Deixe em branco na maioria dos casos. Para usuários técnicos.</p>
+            </div>
+        </details>
+
+        <div class="form-actions">
+            <a href="{% url 'controladoria:regra_list' %}" class="btn btn--ghost">Cancelar</a>
+            <button type="submit" class="btn btn--primary">Salvar regra</button>
+        </div>
+    </form>
+</section>
+
+<template id="filtro-linha-template">
+    {% include "controladoria/includes/filtro_linha.html" with secao="__SECAO__" grupo_idx="__GRUPO__" campo="Assunto" operador="in" valores="" %}
+</template>
+
+<template id="filtro-grupo-template">
+    <div class="filtro-grupo" data-grupo-index="__GRUPO__">
+        <div class="filtro-grupo__header">
+            <strong>Grupo __NUM__</strong>
+            <div class="field field--inline">
+                <label>Condições do grupo</label>
+                <select name="__SECAO___grupo___GRUPO___operador_logico" class="input input--sm">
+                    <option value="and" selected>E (AND)</option>
+                    <option value="or">OU (OR)</option>
+                </select>
+            </div>
+            <button type="button" class="btn btn--ghost btn--sm btn-remover-grupo" title="Remover grupo">✕ Grupo</button>
+        </div>
+        <div class="filtros-builder filtros-builder--nested"></div>
+        <button type="button" class="btn btn--ghost btn--sm btn-add-filtro">+ Condição no grupo</button>
+    </div>
+</template>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/regra_form.js' %}?v=4" defer></script>
+{% endblock %}

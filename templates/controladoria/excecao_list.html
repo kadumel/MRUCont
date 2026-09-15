@@ -1,0 +1,241 @@
+{% extends "controladoria/layout_app.html" %}
+{% load l10n %}
+
+{% block title %}Exceções{% endblock %}
+{% block page_heading %}Exceções de lançamento{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Busque lançamentos pela medida e exclua os que não devem entrar na regra</p>{% endblock %}
+
+{% block content %}
+<section class="filters-card glass-card">
+    <form method="get" class="filters-form">
+        <input type="hidden" name="tab" value="lancamentos">
+        <div class="filters-form__grid">
+            <div class="field">
+                <label for="medida">Medida *</label>
+                <select name="medida" id="medida" class="input" required onchange="this.form.submit()">
+                    <option value="">Selecione a medida</option>
+                    {% for m in medidas %}
+                    <option value="{{ m.pk }}"{% if medida_id == m.pk|stringformat:"s" %} selected{% endif %}>{{ m.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% if regras|length > 1 %}
+            <div class="field">
+                <label for="regra">Regra</label>
+                <select name="regra" id="regra" class="input" onchange="this.form.submit()">
+                    {% for r in regras %}
+                    <option value="{{ r.pk }}"{% if regra_id == r.pk|stringformat:"s" %} selected{% endif %}>{{ r.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% elif regra %}
+            <input type="hidden" name="regra" value="{{ regra.pk }}">
+            {% endif %}
+            <div class="field">
+                <label for="data_inicio">Data inicial</label>
+                <input type="date" name="data_inicio" id="data_inicio" class="input" value="{{ data_inicio }}">
+            </div>
+            <div class="field">
+                <label for="data_fim">Data final</label>
+                <input type="date" name="data_fim" id="data_fim" class="input" value="{{ data_fim }}">
+            </div>
+            <div class="field">
+                <label for="status">Status</label>
+                <select name="status" id="status" class="input">
+                    <option value="todos"{% if status_lancamento == 'todos' %} selected{% endif %}>Todos</option>
+                    <option value="ativos"{% if status_lancamento == 'ativos' %} selected{% endif %}>Somente ativos</option>
+                    <option value="excluidos"{% if status_lancamento == 'excluidos' %} selected{% endif %}>Somente excluídos</option>
+                </select>
+            </div>
+            <div class="field">
+                <label for="q">Buscar nos lançamentos</label>
+                <input type="search" name="q" id="q" class="input" value="{{ q }}" placeholder="Assunto, empresa, cliente...">
+            </div>
+        </div>
+        <div class="filters-form__actions">
+            {% if medida_id %}
+            <button type="submit" class="btn btn--primary btn--sm">Buscar lançamentos</button>
+            {% endif %}
+        </div>
+    </form>
+</section>
+
+{% if regra %}
+<section class="info-banner glass-card">
+    <p><strong>Regra:</strong> {{ regra.nome }}</p>
+    <p class="text-muted">{{ regra.resumo_filtros }}</p>
+</section>
+{% endif %}
+
+{% if erro %}
+<div class="alert alert--error">{{ erro }}</div>
+{% endif %}
+
+{% if regra %}
+<section class="tabs-card glass-card">
+    <nav class="tabs-nav" aria-label="Lançamentos e exceções">
+        <a
+            href="?{{ query_lancamentos }}"
+            class="tabs-nav__item{% if tab_ativa == 'lancamentos' %} tabs-nav__item--active{% endif %}"
+            {% if tab_ativa == 'lancamentos' %}aria-current="page"{% endif %}
+        >
+            Lançamentos
+            {% if resultado %}
+            <span class="tabs-nav__badge">{{ resultado.total }}</span>
+            {% endif %}
+        </a>
+        <a
+            href="?{{ query_excecoes }}"
+            class="tabs-nav__item{% if tab_ativa == 'excecoes' %} tabs-nav__item--active{% endif %}"
+            {% if tab_ativa == 'excecoes' %}aria-current="page"{% endif %}
+        >
+            Exceções
+            <span class="tabs-nav__badge">{{ excecoes_cadastradas|length }}</span>
+        </a>
+    </nav>
+
+    {% if tab_ativa == 'lancamentos' %}
+    <div class="tabs-panel">
+        {% if resultado %}
+        <div class="tabs-panel__header">
+            <h2>Lançamentos encontrados</h2>
+            <span class="table-meta">{{ resultado.total }} registro(s)</span>
+        </div>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Empresa</th>
+                        <th>Empreend.</th>
+                        <th>Assunto</th>
+                        <th>Classificação</th>
+                        <th>Cliente / Fornec.</th>
+                        <th>D/C</th>
+                        <th>Valor</th>
+                        <th>SIBAN</th>
+                        <th>Observação doc.</th>
+                        {% if tem_subgrupo %}<th>SubGrupo</th>{% endif %}
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for lanc in resultado.lancamentos %}
+                    <tr class="{% if lanc.ja_excluido %}row--excluido{% endif %}">
+                        <td>{% if lanc.data_fmt %}{{ lanc.data_fmt|date:"d/m/Y" }}{% else %}—{% endif %}</td>
+                        <td>{{ lanc.cdEmpresa|default:"—" }}</td>
+                        <td>{{ lanc.cdEmpreendimento|default:"—" }}</td>
+                        <td>{{ lanc.Assunto|default:"—"|truncatechars:30 }}</td>
+                        <td>{{ lanc.Classificacao|default:"—"|truncatechars:25 }}</td>
+                        <td>{{ lanc.ClienteFornecedor|default:"—"|truncatechars:25 }}</td>
+                        <td>{{ lanc.DC|default:"—" }}</td>
+                        <td>{% if lanc.valor != None %}{{ lanc.valor|floatformat:2 }}{% else %}—{% endif %}</td>
+                        <td>{{ lanc.siban|default:"—" }}</td>
+                        <td class="cell-obs" title="{{ lanc.observacaoDoc|default:'' }}">{{ lanc.observacaoDoc|default:"—"|truncatechars:45 }}</td>
+                        {% if tem_subgrupo %}<td>{% firstof lanc.nmSubGrupo lanc.nmSubgrupo "—"|truncatechars:20 %}</td>{% endif %}
+                        <td class="actions-cell">
+                            {% if lanc.ja_excluido %}
+                            <span class="status-pill status-pill--inativo" title="Já está nas exceções">Excluído</span>
+                            {% else %}
+                            <form method="post" action="{% url 'controladoria:excecao_adicionar' %}" class="form-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="regra_id" value="{{ regra.pk }}">
+                                <input type="hidden" name="chave_orc" value="{{ lanc.chaveOrc|default:'' }}">
+                                <input type="hidden" name="cd_empresa" value="{{ lanc.cdEmpresa|default:'' }}">
+                                <input type="hidden" name="cd_empreendimento" value="{{ lanc.cdEmpreendimento|default:'' }}">
+                                <input type="hidden" name="cd_nucleo" value="{{ lanc.cdNucleo|default:'' }}">
+                                <input type="hidden" name="cd_centro" value="{{ lanc.cdCentro|default:'' }}">
+                                <input type="hidden" name="data" value="{% if lanc.data_fmt %}{{ lanc.data_fmt|date:'Y-m-d' }}{% endif %}">
+                                <input type="hidden" name="assunto" value="{{ lanc.Assunto|default:'' }}">
+                                <input type="hidden" name="classificacao" value="{{ lanc.Classificacao|default:'' }}">
+                                <input type="hidden" name="cliente_fornecedor" value="{{ lanc.ClienteFornecedor|default:'' }}">
+                                <input type="hidden" name="valor" value="{% if lanc.valor != None %}{% localize off %}{{ lanc.valor }}{% endlocalize %}{% endif %}">
+                                <input type="hidden" name="q_retorno" value="{{ q }}">
+                                <input type="hidden" name="page_retorno" value="{{ pagina }}">
+                                <input type="hidden" name="data_inicio_retorno" value="{{ data_inicio }}">
+                                <input type="hidden" name="data_fim_retorno" value="{{ data_fim }}">
+                                <input type="hidden" name="status_retorno" value="{{ status_lancamento }}">
+                                <button type="submit" class="btn-icon btn-icon--danger" title="Excluir este lançamento da regra">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.75"/>
+                                        <path d="M8 8l8 8M16 8l-8 8" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+                                    </svg>
+                                    <span class="sr-only">Excluir da regra</span>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="12" class="empty-row">Nenhum lançamento encontrado para os filtros da regra.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if resultado.total_paginas > 1 %}
+        <div class="pagination">
+            {% if pagina > 1 %}
+            <a href="?{{ query_lancamentos }}&page={{ pagina|add:'-1' }}">Anterior</a>
+            {% endif %}
+            <span>Página {{ pagina }} de {{ resultado.total_paginas }}</span>
+            {% if pagina < resultado.total_paginas %}
+            <a href="?{{ query_lancamentos }}&page={{ pagina|add:'1' }}">Próxima</a>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% elif medida_id and not erro %}
+        <p class="tabs-panel__empty">Selecione a medida e clique em <strong>Buscar lançamentos</strong>.</p>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="tabs-panel">
+        <div class="tabs-panel__header">
+            <h2>Exceções cadastradas nesta regra</h2>
+            <span class="table-meta">{{ excecoes_cadastradas|length }} registro(s)</span>
+        </div>
+        {% if excecoes_cadastradas %}
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Empresa</th>
+                        <th>Conta / Chave</th>
+                        <th>Assunto</th>
+                        <th>Classificação</th>
+                        <th>Valor</th>
+                        <th>Motivo</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for exc in excecoes_cadastradas %}
+                    <tr>
+                        <td>{% if exc.data %}{{ exc.data|date:"d/m/Y" }}{% else %}—{% endif %}</td>
+                        <td>{{ exc.cd_empresa|default:"—" }}</td>
+                        <td>{{ exc.chave_orc|default:"—"|truncatechars:35 }}</td>
+                        <td>{{ exc.assunto|default:"—"|truncatechars:30 }}</td>
+                        <td>{{ exc.classificacao|default:"—"|truncatechars:25 }}</td>
+                        <td>{% if exc.valor != None %}{{ exc.valor|floatformat:2 }}{% else %}—{% endif %}</td>
+                        <td>{{ exc.motivo|truncatechars:40 }}</td>
+                        <td class="actions-cell">
+                            <a href="{% url 'controladoria:excecao_delete' exc.pk %}?medida={{ medida_id }}&regra={{ regra_id }}" class="btn btn--ghost btn--sm btn--danger">Remover</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="tabs-panel__empty">Nenhuma exceção cadastrada para esta regra.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+</section>
+{% elif medida_id and not erro %}
+<section class="table-card glass-card">
+    <p class="empty-row">Selecione a medida e clique em <strong>Buscar lançamentos</strong>.</p>
+</section>
+{% endif %}
+{% endblock %}

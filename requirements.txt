@@ -1,0 +1,4 @@
+django>=6.0,<6.1
+mssql-django>=1.7,<1.8
+pyodbc>=5.3
+python-dotenv>=1.2

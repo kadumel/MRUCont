@@ -1,0 +1,25 @@
+<div class="filtro-linha">
+    <div class="field">
+        <label>Campo</label>
+        <select name="{{ secao }}_grupo_{{ grupo_idx }}_campo" class="input">
+            {% for val, label in campos_fato %}
+            <option value="{{ val }}"{% if campo == val %} selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="field">
+        <label>Condição</label>
+        <select name="{{ secao }}_grupo_{{ grupo_idx }}_operador" class="input filtro-operador">
+            {% for val, label in operadores %}
+            <option value="{{ val }}"{% if operador == val %} selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="field field--grow">
+        <label>Valor(es)</label>
+        <input type="text" name="{{ secao }}_grupo_{{ grupo_idx }}_valores" class="input"
+               value="{% if valores %}{% if valores.0 %}{{ valores|join:', ' }}{% else %}{{ valores }}{% endif %}{% endif %}"
+               placeholder="Ex.: SPE  ou  Tarifa TED/PIX">
+    </div>
+    <button type="button" class="btn btn--ghost btn--sm btn-remover-filtro" title="Remover condição">✕</button>
+</div>

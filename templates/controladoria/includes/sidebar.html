@@ -1,0 +1,63 @@
+<aside class="sidebar glass-card">
+    <div class="sidebar__brand">
+        <a href="{% url 'controladoria:medida_list' %}" class="brand-link brand-link--sidebar">
+            {% include "controladoria/includes/brand_logo.html" %}
+            <small>Controladoria BI</small>
+        </a>
+    </div>
+    <nav class="sidebar__nav">
+        <details class="nav-group{% if nav_cadastros_expanded %} nav-group--expanded{% endif %}"{% if nav_cadastros_expanded %} open{% endif %}>
+            <summary class="nav-group__summary">Cadastros</summary>
+            <div class="nav-group__submenu">
+                <a href="{% url 'controladoria:empresa_list' %}" class="nav-subitem{% if nav_active == 'empresas' %} nav-subitem--active{% endif %}">
+                    Empresas
+                </a>
+                <a href="{% url 'controladoria:socio_list' %}" class="nav-subitem{% if nav_active == 'socios' %} nav-subitem--active{% endif %}">
+                    Sócios
+                </a>
+                <a href="{% url 'controladoria:competencia_list' %}" class="nav-subitem{% if nav_active == 'competencias' %} nav-subitem--active{% endif %}">
+                    Competências
+                </a>
+                <a href="{% url 'controladoria:conta_financeira_list' %}" class="nav-subitem{% if nav_active == 'contas_financeiras' %} nav-subitem--active{% endif %}">
+                    Conta Financeira
+                </a>
+            </div>
+        </details>
+
+        <details class="nav-group{% if nav_movimentos_expanded %} nav-group--expanded{% endif %}"{% if nav_movimentos_expanded %} open{% endif %}>
+            <summary class="nav-group__summary">Movimentos</summary>
+            <div class="nav-group__submenu">
+                <a href="{% url 'controladoria:lancamento_list' %}" class="nav-subitem{% if nav_active == 'lancamentos' %} nav-subitem--active{% endif %}">
+                    Lançamentos
+                </a>
+            </div>
+        </details>
+
+        <details class="nav-group{% if nav_regras_expanded %} nav-group--expanded{% endif %}"{% if nav_regras_expanded %} open{% endif %}>
+            <summary class="nav-group__summary">Parceria</summary>
+            <div class="nav-group__submenu">
+                {% comment %}
+                Submenu Início — reativar se necessário:
+                <a href="{% url 'controladoria:dashboard' %}" class="nav-subitem{% if nav_active == 'dashboard' %} nav-subitem--active{% endif %}">
+                    Início
+                </a>
+                {% endcomment %}
+                <a href="{% url 'controladoria:medida_list' %}" class="nav-subitem{% if nav_active == 'medidas' %} nav-subitem--active{% endif %}">
+                    Medidas
+                </a>
+                <a href="{% url 'controladoria:regra_list' %}" class="nav-subitem{% if nav_active == 'regras' %} nav-subitem--active{% endif %}">
+                    Regras de medida
+                </a>
+                <a href="{% url 'controladoria:excecao_list' %}" class="nav-subitem{% if nav_active == 'excecoes' %} nav-subitem--active{% endif %}">
+                    Exceções
+                </a>
+                <a href="{% url 'controladoria:ajuste_list' %}" class="nav-subitem{% if nav_active == 'ajustes' %} nav-subitem--active{% endif %}">
+                    Ajustes manuais
+                </a>
+                <a href="{% url 'controladoria:comissao_list' %}" class="nav-subitem{% if nav_active == 'comissoes' %} nav-subitem--active{% endif %}">
+                    Comissões
+                </a>
+            </div>
+        </details>
+    </nav>
+</aside>

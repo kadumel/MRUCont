@@ -1,0 +1,216 @@
+{% extends "controladoria/layout_app.html" %}
+{% load l10n %}
+
+{% block title %}Ajustes manuais{% endblock %}
+{% block page_heading %}Ajustes manuais{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Gere lançamentos de ajuste a partir de registros excluídos da regra</p>{% endblock %}
+
+{% block content %}
+<section class="filters-card glass-card">
+    <form method="get" class="filters-form">
+        <input type="hidden" name="tab" value="lancamentos">
+        <div class="filters-form__grid">
+            <div class="field">
+                <label for="medida">Medida *</label>
+                <select name="medida" id="medida" class="input" required onchange="this.form.submit()">
+                    <option value="">Selecione a medida</option>
+                    {% for m in medidas %}
+                    <option value="{{ m.pk }}"{% if medida_id == m.pk|stringformat:"s" %} selected{% endif %}>{{ m.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% if regras|length > 1 %}
+            <div class="field">
+                <label for="regra">Regra</label>
+                <select name="regra" id="regra" class="input" onchange="this.form.submit()">
+                    {% for r in regras %}
+                    <option value="{{ r.pk }}"{% if regra_id == r.pk|stringformat:"s" %} selected{% endif %}>{{ r.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% elif regra %}
+            <input type="hidden" name="regra" value="{{ regra.pk }}">
+            {% endif %}
+            <div class="field">
+                <label for="data_inicio">Data inicial</label>
+                <input type="date" name="data_inicio" id="data_inicio" class="input" value="{{ data_inicio }}">
+            </div>
+            <div class="field">
+                <label for="data_fim">Data final</label>
+                <input type="date" name="data_fim" id="data_fim" class="input" value="{{ data_fim }}">
+            </div>
+            <div class="field">
+                <label for="q">Buscar nos lançamentos</label>
+                <input type="search" name="q" id="q" class="input" value="{{ q }}" placeholder="Assunto, empresa, cliente...">
+            </div>
+        </div>
+        <div class="filters-form__actions">
+            {% if medida_id %}
+            <button type="submit" class="btn btn--primary btn--sm">Buscar lançamentos excluídos</button>
+            {% endif %}
+        </div>
+    </form>
+</section>
+
+{% if regra %}
+<section class="info-banner glass-card">
+    <p><strong>Regra:</strong> {{ regra.nome }}</p>
+    <p class="text-muted">{{ regra.resumo_filtros }}</p>
+    <p class="text-muted">Somente lançamentos já excluídos da regra podem receber ajuste.</p>
+</section>
+{% endif %}
+
+{% if erro %}
+<div class="alert alert--error">{{ erro }}</div>
+{% endif %}
+
+{% if regra %}
+<section class="tabs-card glass-card">
+    <nav class="tabs-nav" aria-label="Lançamentos excluídos e ajustes">
+        <a
+            href="?{{ query_lancamentos }}"
+            class="tabs-nav__item{% if tab_ativa == 'lancamentos' %} tabs-nav__item--active{% endif %}"
+            {% if tab_ativa == 'lancamentos' %}aria-current="page"{% endif %}
+        >
+            Lançamentos excluídos
+            {% if resultado %}
+            <span class="tabs-nav__badge">{{ resultado.total }}</span>
+            {% endif %}
+        </a>
+        <a
+            href="?{{ query_ajustes }}"
+            class="tabs-nav__item{% if tab_ativa == 'ajustes' %} tabs-nav__item--active{% endif %}"
+            {% if tab_ativa == 'ajustes' %}aria-current="page"{% endif %}
+        >
+            Ajustes gerados
+            <span class="tabs-nav__badge">{{ ajustes_cadastrados|length }}</span>
+        </a>
+    </nav>
+
+    {% if tab_ativa == 'lancamentos' %}
+    <div class="tabs-panel">
+        {% if resultado %}
+        <div class="tabs-panel__header">
+            <h2>Lançamentos excluídos</h2>
+            <span class="table-meta">{{ resultado.total }} registro(s)</span>
+        </div>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Empresa</th>
+                        <th>Empreend.</th>
+                        <th>Assunto</th>
+                        <th>Classificação</th>
+                        <th>Cliente / Fornec.</th>
+                        <th>D/C</th>
+                        <th>Valor</th>
+                        <th>Ajustado</th>
+                        <th>Disponível</th>
+                        {% if tem_subgrupo %}<th>SubGrupo</th>{% endif %}
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for lanc in resultado.lancamentos %}
+                    <tr class="row--excluido">
+                        <td>{% if lanc.data_fmt %}{{ lanc.data_fmt|date:"d/m/Y" }}{% else %}—{% endif %}</td>
+                        <td>{{ lanc.cdEmpresa|default:"—" }}</td>
+                        <td>{{ lanc.cdEmpreendimento|default:"—" }}</td>
+                        <td>{{ lanc.Assunto|default:"—"|truncatechars:30 }}</td>
+                        <td>{{ lanc.Classificacao|default:"—"|truncatechars:25 }}</td>
+                        <td>{{ lanc.ClienteFornecedor|default:"—"|truncatechars:25 }}</td>
+                        <td>{{ lanc.DC|default:"—" }}</td>
+                        <td>{% if lanc.valor != None %}{{ lanc.valor|floatformat:2 }}{% else %}—{% endif %}</td>
+                        <td>{% if lanc.soma_ajustes != None %}{{ lanc.soma_ajustes|floatformat:2 }}{% else %}0,00{% endif %}</td>
+                        <td>{% if lanc.valor_restante != None %}{{ lanc.valor_restante|floatformat:2 }}{% else %}—{% endif %}</td>
+                        {% if tem_subgrupo %}<td>{{ lanc.nmSubGrupo|default:"—"|truncatechars:20 }}</td>{% endif %}
+                        <td class="actions-cell">
+                            <a
+                                href="{% url 'controladoria:ajuste_gerar' %}?regra_id={{ regra.pk }}&medida_id={{ medida_id }}&chave_orc={{ lanc.chaveOrc|default:''|urlencode }}&cd_empresa={{ lanc.cdEmpresa|default:''|urlencode }}&cd_empreendimento={{ lanc.cdEmpreendimento|default:''|urlencode }}&cd_nucleo={{ lanc.cdNucleo|default:''|urlencode }}&cd_centro={{ lanc.cdCentro|default:''|urlencode }}&data={% if lanc.data_fmt %}{{ lanc.data_fmt|date:'Y-m-d' }}{% endif %}&assunto={{ lanc.Assunto|default:''|urlencode }}&classificacao={{ lanc.Classificacao|default:''|urlencode }}&cliente_fornecedor={{ lanc.ClienteFornecedor|default:''|urlencode }}&valor={% if lanc.valor != None %}{% localize off %}{{ lanc.valor }}{% endlocalize %}{% endif %}&dc={{ lanc.DC|default:''|urlencode }}&q_retorno={{ q|urlencode }}&page_retorno={{ pagina }}&data_inicio_retorno={{ data_inicio|urlencode }}&data_fim_retorno={{ data_fim|urlencode }}"
+                                class="btn-icon btn-icon--primary btn-icon--has-badge"
+                                title="Gerar lançamento{% if lanc.qtd_ajustes %} — {{ lanc.qtd_ajustes }} ajuste(s) já gerado(s){% endif %}"
+                            >
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                    <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+                                </svg>
+                                {% if lanc.qtd_ajustes %}
+                                <span class="btn-icon__badge">{{ lanc.qtd_ajustes }}</span>
+                                {% endif %}
+                                <span class="sr-only">Gerar lançamento</span>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="12" class="empty-row">Nenhum lançamento excluído encontrado para os filtros.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if resultado.total_paginas > 1 %}
+        <div class="pagination">
+            {% if pagina > 1 %}
+            <a href="?{{ query_lancamentos }}&page={{ pagina|add:'-1' }}">Anterior</a>
+            {% endif %}
+            <span>Página {{ pagina }} de {{ resultado.total_paginas }}</span>
+            {% if pagina < resultado.total_paginas %}
+            <a href="?{{ query_lancamentos }}&page={{ pagina|add:'1' }}">Próxima</a>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% elif medida_id and not erro %}
+        <p class="tabs-panel__empty">Selecione a medida e clique em <strong>Buscar lançamentos excluídos</strong>.</p>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="tabs-panel">
+        <div class="tabs-panel__header">
+            <h2>Ajustes cadastrados</h2>
+            <span class="table-meta">{{ ajustes_cadastrados|length }} registro(s)</span>
+        </div>
+        {% if ajustes_cadastrados %}
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Data ajustada</th>
+                        <th>Empresa</th>
+                        <th>Conta / Chave</th>
+                        <th>Data original</th>
+                        <th>Valor original</th>
+                        <th>Novo valor</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ajuste in ajustes_cadastrados %}
+                    <tr>
+                        <td>{{ ajuste.data_competencia|date:"d/m/Y" }}</td>
+                        <td>{{ ajuste.cd_empresa|default:"—" }}</td>
+                        <td>{{ ajuste.chave_orc|default:"—"|truncatechars:35 }}</td>
+                        <td>{% if ajuste.data_original %}{{ ajuste.data_original|date:"d/m/Y" }}{% else %}—{% endif %}</td>
+                        <td>{% if ajuste.valor_original != None %}{{ ajuste.valor_original|floatformat:2 }}{% else %}—{% endif %}</td>
+                        <td>{{ ajuste.valor|floatformat:2 }}</td>
+                        <td class="actions-cell">
+                            <a href="{% url 'controladoria:ajuste_edit' ajuste.pk %}?retorno={{ query_ajustes|urlencode }}" class="btn btn--ghost btn--sm">Editar</a>
+                            <a href="{% url 'controladoria:ajuste_delete' ajuste.pk %}?retorno={{ query_ajustes|urlencode }}" class="btn btn--ghost btn--sm btn--danger">Excluir</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="tabs-panel__empty">Nenhum ajuste cadastrado para esta medida.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+</section>
+{% elif medida_id and not erro %}
+<section class="table-card glass-card">
+    <p class="empty-row">Selecione a medida e clique em <strong>Buscar lançamentos excluídos</strong>.</p>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,120 @@
+{% extends "controladoria/layout_app.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block page_heading %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Dados do sócio e vínculo com empresas</p>{% endblock %}
+
+{% block content %}
+<section class="form-card glass-card">
+    <form method="post" class="entity-form" id="socio-form" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+        <div class="alert alert--error">{{ form.non_field_errors }}</div>
+        {% endif %}
+        {% if formset.non_form_errors %}
+        <div class="alert alert--error">{{ formset.non_form_errors }}</div>
+        {% endif %}
+
+        <h3 class="form-section-title">Dados do sócio</h3>
+        {% for field in form %}
+        <div class="field{% if field.errors %} field--error{% endif %}{% if field.name == 'ativo' %} field--checkbox{% endif %}">
+            {% if field.name == 'ativo' %}
+            <label class="checkbox-label" for="{{ field.id_for_label }}">
+                {{ field }}
+                <span>{{ field.label }}</span>
+            </label>
+            {% else %}
+            <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+            {{ field }}
+            {% endif %}
+            {% if field.help_text %}<p class="field-help">{{ field.help_text }}</p>{% endif %}
+            {% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+        </div>
+        {% endfor %}
+
+        <h3 class="form-section-title">Empresas relacionadas</h3>
+        <p class="field-help">Informe a empresa, o percentual de participação e a taxa de administração.</p>
+
+        {{ formset.management_form }}
+        <div id="socio-empresa-rows" class="formset-rows">
+            {% for f in formset %}
+            <div class="formset-row{% if f.errors %} formset-row--error{% endif %}">
+                {% for hidden in f.hidden_fields %}{{ hidden }}{% endfor %}
+                <div class="formset-row__fields">
+                    <div class="field{% if f.empresa.errors %} field--error{% endif %}">
+                        <label for="{{ f.empresa.id_for_label }}">{{ f.empresa.label }}</label>
+                        {{ f.empresa }}
+                        {% for error in f.empresa.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+                    </div>
+                    <div class="field{% if f.percentual.errors %} field--error{% endif %}">
+                        <label for="{{ f.percentual.id_for_label }}">{{ f.percentual.label }}</label>
+                        {{ f.percentual }}
+                        {% for error in f.percentual.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+                    </div>
+                    <div class="field{% if f.taxa_administracao.errors %} field--error{% endif %}">
+                        <label for="{{ f.taxa_administracao.id_for_label }}">{{ f.taxa_administracao.label }}</label>
+                        {{ f.taxa_administracao }}
+                        {% for error in f.taxa_administracao.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+                    </div>
+                    {% if formset.can_delete %}
+                    <div class="field field--checkbox formset-row__delete">
+                        <label class="checkbox-label" for="{{ f.DELETE.id_for_label }}">
+                            {{ f.DELETE }}
+                            <span>Excluir</span>
+                        </label>
+                    </div>
+                    {% endif %}
+                </div>
+                {% if f.non_field_errors %}
+                <div class="alert alert--error">{{ f.non_field_errors }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="formset-actions">
+            <button type="button" class="btn btn--ghost btn--sm" id="add-socio-empresa">Adicionar empresa</button>
+        </div>
+
+        <div class="form-actions">
+            <a href="{% url 'controladoria:socio_list' %}" class="btn btn--ghost">Cancelar</a>
+            <button type="submit" class="btn btn--primary">Salvar</button>
+        </div>
+    </form>
+</section>
+
+<template id="socio-empresa-empty">
+    <div class="formset-row">
+        {% with f=formset.empty_form %}
+        {% for hidden in f.hidden_fields %}{{ hidden }}{% endfor %}
+        <div class="formset-row__fields">
+            <div class="field">
+                <label for="{{ f.empresa.id_for_label }}">{{ f.empresa.label }}</label>
+                {{ f.empresa }}
+            </div>
+            <div class="field">
+                <label for="{{ f.percentual.id_for_label }}">{{ f.percentual.label }}</label>
+                {{ f.percentual }}
+            </div>
+            <div class="field">
+                <label for="{{ f.taxa_administracao.id_for_label }}">{{ f.taxa_administracao.label }}</label>
+                {{ f.taxa_administracao }}
+            </div>
+            {% if formset.can_delete %}
+            <div class="field field--checkbox formset-row__delete">
+                <label class="checkbox-label" for="{{ f.DELETE.id_for_label }}">
+                    {{ f.DELETE }}
+                    <span>Excluir</span>
+                </label>
+            </div>
+            {% endif %}
+        </div>
+        {% endwith %}
+    </div>
+</template>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/socio_form.js' %}"></script>
+{% endblock %}

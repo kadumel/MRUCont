@@ -1,0 +1,69 @@
+{% extends "controladoria/layout_app.html" %}
+
+{% block title %}Medidas{% endblock %}
+{% block page_heading %}Medidas{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Colunas de saída do BI</p>{% endblock %}
+
+{% block content %}
+<section class="filters-card glass-card">
+    <form method="get" class="filters-form">
+        <div class="filters-form__grid">
+            <div class="field">
+                <label for="q">Buscar</label>
+                <input type="search" name="q" id="q" value="{{ q }}" placeholder="Código ou nome">
+            </div>
+            <div class="field">
+                <label for="status">Status</label>
+                <select name="status" id="status">
+                    <option value="">Todos</option>
+                    <option value="ativo"{% if status == 'ativo' %} selected{% endif %}>Ativos</option>
+                    <option value="inativo"{% if status == 'inativo' %} selected{% endif %}>Inativos</option>
+                </select>
+            </div>
+        </div>
+        <div class="filters-form__actions">
+            <button type="submit" class="btn btn--ghost btn--sm">Filtrar</button>
+            <a href="{% url 'controladoria:medida_create' %}" class="btn btn--primary btn--sm">Nova medida</a>
+        </div>
+    </form>
+</section>
+
+<section class="table-card glass-card">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Ordem</th>
+                    <th>Código</th>
+                    <th>Nome</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for medida in medidas %}
+                <tr>
+                    <td>{{ medida.ordem }}</td>
+                    <td><code>{{ medida.codigo }}</code></td>
+                    <td>{{ medida.nome }}</td>
+                    <td><span class="status-pill status-pill--{% if medida.ativo %}ativo{% else %}inativo{% endif %}">{% if medida.ativo %}Ativo{% else %}Inativo{% endif %}</span></td>
+                    <td class="actions-cell">
+                        <a href="{% url 'controladoria:medida_edit' medida.pk %}" class="btn btn--ghost btn--sm">Editar</a>
+                        <a href="{% url 'controladoria:medida_delete' medida.pk %}" class="btn btn--ghost btn--sm btn--danger">Excluir</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="empty-row">Nenhuma medida cadastrada.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if is_paginated %}
+    <div class="pagination">
+        {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&q={{ q }}&status={{ status }}">Anterior</a>{% endif %}
+        <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}&q={{ q }}&status={{ status }}">Próxima</a>{% endif %}
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

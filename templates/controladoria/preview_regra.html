@@ -1,0 +1,48 @@
+{% extends "controladoria/layout_app.html" %}
+
+{% block title %}Preview — {{ regra.nome }}{% endblock %}
+{% block page_heading %}Preview: {{ regra.medida.codigo }}{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">{{ regra.nome }}</p>{% endblock %}
+
+{% block content %}
+<section class="table-card glass-card">
+    <div class="table-card__header">
+        <a href="{% url 'controladoria:regra_edit' regra.pk %}" class="btn btn--ghost btn--sm">Editar regra</a>
+        <a href="{% url 'controladoria:regra_list' %}" class="btn btn--ghost btn--sm">Voltar</a>
+    </div>
+
+    {% if erro %}
+    <div class="alert alert--error">{{ erro }}</div>
+    {% endif %}
+
+    {% if preview %}
+    <details class="sql-details" open>
+        <summary>SQL gerado</summary>
+        <pre class="code-block">{{ preview.sql }}</pre>
+    </details>
+
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    {% for col in preview.colunas %}
+                    <th>{{ col }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for linha in preview.linhas %}
+                <tr>
+                    {% for val in linha %}
+                    <td>{{ val }}</td>
+                    {% endfor %}
+                </tr>
+                {% empty %}
+                <tr><td colspan="10" class="empty-row">Nenhum dado retornado.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

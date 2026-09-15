@@ -1,0 +1,16 @@
+{% extends "controladoria/layout_app.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block page_heading %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<section class="form-card glass-card">
+    <p>Tem certeza que deseja excluir <strong>{{ object_label }}</strong>?</p>
+    <p class="text-muted">Esta ação não pode ser desfeita.</p>
+    <form method="post" class="form-actions">
+        {% csrf_token %}
+        <a href="{{ cancel_url }}" class="btn btn--ghost">Cancelar</a>
+        <button type="submit" class="btn btn--primary btn--danger">Confirmar exclusão</button>
+    </form>
+</section>
+{% endblock %}

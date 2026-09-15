@@ -1,0 +1,60 @@
+{% extends "controladoria/layout_app.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block page_heading %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Revise os dados do lançamento excluído e informe a nova data e valor</p>{% endblock %}
+
+{% block content %}
+<section class="info-banner glass-card">
+    <p><strong>Medida:</strong> {{ medida.nome }}</p>
+    <p><strong>Regra:</strong> {{ regra.nome }}</p>
+</section>
+
+<section class="form-card glass-card">
+    <h2 class="form-section-title">Valores originais</h2>
+    <p class="text-muted form-section-help">Referência do lançamento excluído. A soma dos ajustes não pode ultrapassar o valor original.</p>
+    <dl class="detail-grid detail-grid--highlight">
+        <div><dt>Data original</dt><dd>{% if lancamento.data %}{{ lancamento.data|date:"d/m/Y" }}{% else %}—{% endif %}</dd></div>
+        <div><dt>Valor original</dt><dd>{% if lancamento.valor != None %}{{ lancamento.valor|floatformat:2 }}{% else %}—{% endif %}</dd></div>
+        <div><dt>Já ajustado</dt><dd>{{ resumo_ajustes.soma_ajustes|default:0|floatformat:2 }}</dd></div>
+        <div><dt>Disponível</dt><dd>{% if resumo_ajustes.valor_restante != None %}{{ resumo_ajustes.valor_restante|floatformat:2 }}{% else %}—{% endif %}</dd></div>
+    </dl>
+
+    <h2 class="form-section-title">Dados do lançamento</h2>
+    <dl class="detail-grid">
+        <div><dt>Empresa</dt><dd>{{ lancamento.cd_empresa|default:"—" }}</dd></div>
+        <div><dt>Empreendimento</dt><dd>{{ lancamento.cd_empreendimento|default:"—" }}</dd></div>
+        <div><dt>Núcleo</dt><dd>{{ lancamento.cd_nucleo|default:"—" }}</dd></div>
+        <div><dt>Centro</dt><dd>{{ lancamento.cd_centro|default:"—" }}</dd></div>
+        <div><dt>D/C</dt><dd>{{ lancamento.dc|default:"—" }}</dd></div>
+        <div><dt>Assunto</dt><dd>{{ lancamento.assunto|default:"—" }}</dd></div>
+        <div><dt>Classificação</dt><dd>{{ lancamento.classificacao|default:"—" }}</dd></div>
+        <div><dt>Cliente / Fornecedor</dt><dd>{{ lancamento.cliente_fornecedor|default:"—" }}</dd></div>
+        <div class="detail-grid__full"><dt>Conta / Chave</dt><dd>{{ lancamento.chave_orc|default:"—" }}</dd></div>
+    </dl>
+
+    <form method="post" class="entity-form" novalidate>
+        {% csrf_token %}
+        <h2 class="form-section-title">Ajuste do lançamento</h2>
+        <p class="text-muted form-section-help">Informe a nova data e o novo valor do ajuste.</p>
+        <div class="form-grid">
+            {% for field in form %}
+            {% if field.is_hidden %}
+            {{ field }}
+            {% else %}
+            <div class="field{% if field.errors %} field--error{% endif %}{% if field.name == 'observacao' %} field--full{% endif %}">
+                <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+                {{ field }}
+                {% if field.help_text %}<p class="field-help">{{ field.help_text }}</p>{% endif %}
+                {% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+        <div class="form-actions">
+            <a href="{{ cancel_url }}" class="btn btn--ghost">Cancelar</a>
+            <button type="submit" class="btn btn--primary">Salvar ajuste</button>
+        </div>
+    </form>
+</section>
+{% endblock %}

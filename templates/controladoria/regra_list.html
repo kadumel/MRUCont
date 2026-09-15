@@ -1,0 +1,73 @@
+{% extends "controladoria/layout_app.html" %}
+
+{% block title %}Regras{% endblock %}
+{% block page_heading %}Regras de medida{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Filtros e agregações sobre a fato financeira</p>{% endblock %}
+
+{% block content %}
+<section class="filters-card glass-card">
+    <form method="get" class="filters-form">
+        <div class="filters-form__grid">
+            <div class="field">
+                <label for="q">Buscar</label>
+                <input type="search" name="q" id="q" value="{{ q }}" placeholder="Nome ou medida">
+            </div>
+            <div class="field">
+                <label for="medida">Medida</label>
+                <select name="medida" id="medida">
+                    <option value="">Todas</option>
+                    {% for m in medidas %}
+                    <option value="{{ m.pk }}"{% if medida_filter == m.pk|stringformat:"s" %} selected{% endif %}>{{ m.codigo }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="filters-form__actions">
+            <button type="submit" class="btn btn--ghost btn--sm">Filtrar</button>
+            <a href="{% url 'controladoria:regra_create' %}" class="btn btn--primary btn--sm">Nova regra</a>
+        </div>
+    </form>
+</section>
+
+<section class="table-card glass-card">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Medida</th>
+                    <th>Nome</th>
+                    <th>Filtros</th>
+                    <th>Ano mín.</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for regra in regras %}
+                <tr>
+                    <td><code>{{ regra.medida.codigo }}</code></td>
+                    <td>{{ regra.nome }}</td>
+                    <td class="cell-resumo">{{ regra.resumo_filtros }}</td>
+                    <td>{{ regra.ano_minimo }}</td>
+                    <td><span class="status-pill status-pill--{% if regra.ativo %}ativo{% else %}inativo{% endif %}">{% if regra.ativo %}Ativo{% else %}Inativo{% endif %}</span></td>
+                    <td class="actions-cell">
+                        <a href="{% url 'controladoria:regra_preview' regra.pk %}" class="btn btn--ghost btn--sm">Preview</a>
+                        <a href="{% url 'controladoria:regra_edit' regra.pk %}" class="btn btn--ghost btn--sm">Editar</a>
+                        <a href="{% url 'controladoria:regra_delete' regra.pk %}" class="btn btn--ghost btn--sm btn--danger">Excluir</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="empty-row">Nenhuma regra cadastrada.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if is_paginated %}
+    <div class="pagination">
+        {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&q={{ q }}&medida={{ medida_filter }}">Anterior</a>{% endif %}
+        <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}&q={{ q }}&medida={{ medida_filter }}">Próxima</a>{% endif %}
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

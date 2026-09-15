@@ -1,0 +1,13 @@
+<header class="topbar">
+    <div class="topbar__title">
+        <h1>{% block page_heading %}Controladoria BI{% endblock %}</h1>
+        {% block page_subtitle %}{% endblock %}
+    </div>
+    <div class="topbar__actions">
+        <span class="user-chip">{{ current_user.get_username }}</span>
+        <form method="post" action="{% url 'controladoria:logout' %}" class="logout-form">
+            {% csrf_token %}
+            <button type="submit" class="btn btn--ghost btn--sm">Sair</button>
+        </form>
+    </div>
+</header>
