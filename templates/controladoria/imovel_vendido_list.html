@@ -1,0 +1,101 @@
+{% extends "controladoria/layout_app.html" %}
+
+{% block title %}Imóveis vendidos{% endblock %}
+{% block page_heading %}Imóveis vendidos{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Gestão de vendas importadas da planilha padrão de comissão (aba Resumo)</p>{% endblock %}
+
+{% block content %}
+<section class="filters-card glass-card">
+    <form method="get" class="filters-form">
+        <div class="filters-form__grid">
+            <div class="field">
+                <label for="q">Buscar</label>
+                <input type="search" name="q" id="q" value="{{ q }}" placeholder="Contrato, cliente, imóvel, corretor...">
+            </div>
+            <div class="field">
+                <label for="cod_empreendimento">Empreendimento</label>
+                <select name="cod_empreendimento" id="cod_empreendimento">
+                    <option value="">Todos</option>
+                    {% for item in empreendimentos %}
+                    <option value="{{ item }}"{% if cod_empreendimento == item %} selected{% endif %}>{{ item }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label for="situacao">Situação</label>
+                <select name="situacao" id="situacao">
+                    <option value="">Todas</option>
+                    {% for item in situacoes %}
+                    <option value="{{ item }}"{% if situacao == item %} selected{% endif %}>{{ item }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label for="regra_comissao">Regra comissão</label>
+                <select name="regra_comissao" id="regra_comissao">
+                    <option value="">Todas</option>
+                    {% for item in regras_comissao %}
+                    <option value="{{ item }}"{% if regra_comissao == item %} selected{% endif %}>{{ item }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="filters-form__actions">
+            <button type="submit" class="btn btn--ghost btn--sm">Filtrar</button>
+            <a href="{% url 'controladoria:imovel_vendido_import' %}" class="btn btn--primary btn--sm">Importar planilha</a>
+            <a href="{% url 'controladoria:imovel_vendido_create' %}" class="btn btn--ghost btn--sm">Novo manual</a>
+        </div>
+    </form>
+</section>
+
+<section class="table-card glass-card">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Data venda</th>
+                    <th>Contrato</th>
+                    <th>Empreendimento</th>
+                    <th>Cliente</th>
+                    <th>Imóvel</th>
+                    <th>Situação</th>
+                    <th>Valor venda</th>
+                    <th>Liquidado</th>
+                    <th>Comissão</th>
+                    <th>Competência</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in imoveis %}
+                <tr>
+                    <td>{% if item.data_venda %}{{ item.data_venda|date:"d/m/Y" }}{% else %}—{% endif %}</td>
+                    <td>{{ item.contrato_ajustado }}</td>
+                    <td>{{ item.cod_empreendimento|default:item.empreendimento_ajustado|default:"—" }}</td>
+                    <td>{{ item.cliente|default:"—" }}</td>
+                    <td>{{ item.imovel|truncatechars:40|default:"—" }}</td>
+                    <td><span class="status-pill">{{ item.situacao|default:"—" }}</span></td>
+                    <td>{% if item.valor_venda != None %}{{ item.valor_venda }}{% else %}—{% endif %}</td>
+                    <td>{% if item.valor_liquidado != None %}{{ item.valor_liquidado }}{% else %}—{% endif %}</td>
+                    <td>{% if item.comissao != None %}{{ item.comissao }}{% else %}—{% endif %}</td>
+                    <td>{% if item.competencia %}{{ item.competencia|date:"m/Y" }}{% else %}—{% endif %}</td>
+                    <td class="actions-cell">
+                        <a href="{% url 'controladoria:imovel_vendido_edit' item.pk %}" class="btn btn--ghost btn--sm">Editar</a>
+                        <a href="{% url 'controladoria:imovel_vendido_delete' item.pk %}" class="btn btn--ghost btn--sm btn--danger">Excluir</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="11" class="empty-row">Nenhum imóvel vendido cadastrado. Importe a planilha para começar.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if is_paginated %}
+    <div class="pagination">
+        {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&q={{ q }}&situacao={{ situacao }}&cod_empreendimento={{ cod_empreendimento }}&regra_comissao={{ regra_comissao }}">Anterior</a>{% endif %}
+        <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}&q={{ q }}&situacao={{ situacao }}&cod_empreendimento={{ cod_empreendimento }}&regra_comissao={{ regra_comissao }}">Próxima</a>{% endif %}
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

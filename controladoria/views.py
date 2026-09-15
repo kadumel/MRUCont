@@ -18,6 +18,8 @@ from controladoria.forms import (
     ContaFinanceiraForm,
     EmpresaForm,
     ExcecaoLancamentoForm,
+    ImovelVendidoForm,
+    ImovelVendidoImportForm,
     LancamentoFinanceiroForm,
     MedidaForm,
     RegraMedidaForm,
@@ -32,6 +34,7 @@ from controladoria.models import (
     ContaFinanceira,
     Empresa,
     ExcecaoLancamento,
+    ImovelVendido,
     LancamentoFinanceiro,
     Medida,
     OperadorFiltro,
@@ -62,6 +65,10 @@ from controladoria.services.comissoes import (
     buscar_comissoes_dw,
     excluir_comissao,
     incluir_comissao,
+)
+from controladoria.services.imoveis_vendidos import (
+    ImovelVendidoImportError,
+    importar_imoveis_vendidos,
 )
 from controladoria.services.regra_form_utils import OPERADOR_RAIZ_CHOICES, condicoes_from_post
 from controladoria.services.motor_regras import (
@@ -609,6 +616,152 @@ class LancamentoFinanceiroDeleteView(ControladoriaLayoutMixin, DeleteView):
     def form_valid(self, form):
         messages.success(self.request, 'Lançamento excluído.')
         return super().form_valid(form)
+
+
+class ImovelVendidoListView(ControladoriaLayoutMixin, ListView):
+    model = ImovelVendido
+    template_name = 'controladoria/imovel_vendido_list.html'
+    context_object_name = 'imoveis'
+    paginate_by = 50
+
+    def get_queryset(self):
+        qs = ImovelVendido.objects.all()
+        q = self.request.GET.get('q', '').strip()
+        if q:
+            qs = qs.filter(
+                Q(contrato_ajustado__icontains=q)
+                | Q(cliente__icontains=q)
+                | Q(imovel__icontains=q)
+                | Q(empreendimento_ajustado__icontains=q)
+                | Q(cod_empreendimento__icontains=q)
+                | Q(corretor__icontains=q)
+                | Q(imobiliaria__icontains=q)
+            )
+        situacao = self.request.GET.get('situacao', '').strip()
+        if situacao:
+            qs = qs.filter(situacao__iexact=situacao)
+        cod_empreendimento = self.request.GET.get('cod_empreendimento', '').strip()
+        if cod_empreendimento:
+            qs = qs.filter(cod_empreendimento__iexact=cod_empreendimento)
+        regra_comissao = self.request.GET.get('regra_comissao', '').strip()
+        if regra_comissao:
+            qs = qs.filter(regra_comissao__iexact=regra_comissao)
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['nav_active'] = 'imoveis_vendidos'
+        ctx['q'] = self.request.GET.get('q', '')
+        ctx['situacao'] = self.request.GET.get('situacao', '')
+        ctx['cod_empreendimento'] = self.request.GET.get('cod_empreendimento', '')
+        ctx['regra_comissao'] = self.request.GET.get('regra_comissao', '')
+        ctx['situacoes'] = (
+            ImovelVendido.objects.exclude(situacao='')
+            .values_list('situacao', flat=True)
+            .distinct()
+            .order_by('situacao')
+        )
+        ctx['empreendimentos'] = (
+            ImovelVendido.objects.exclude(cod_empreendimento='')
+            .values_list('cod_empreendimento', flat=True)
+            .distinct()
+            .order_by('cod_empreendimento')
+        )
+        ctx['regras_comissao'] = (
+            ImovelVendido.objects.exclude(regra_comissao='')
+            .values_list('regra_comissao', flat=True)
+            .distinct()
+            .order_by('regra_comissao')
+        )
+        return ctx
+
+
+class ImovelVendidoCreateView(ControladoriaLayoutMixin, CreateView):
+    model = ImovelVendido
+    form_class = ImovelVendidoForm
+    template_name = 'controladoria/imovel_vendido_form.html'
+    success_url = reverse_lazy('controladoria:imovel_vendido_list')
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['nav_active'] = 'imoveis_vendidos'
+        ctx['page_title'] = 'Novo imóvel vendido'
+        return ctx
+
+    def form_valid(self, form):
+        self.object = form.save()
+        messages.success(self.request, 'Imóvel vendido cadastrado com sucesso.')
+        return redirect(self.get_success_url())
+
+
+class ImovelVendidoUpdateView(ControladoriaLayoutMixin, UpdateView):
+    model = ImovelVendido
+    form_class = ImovelVendidoForm
+    template_name = 'controladoria/imovel_vendido_form.html'
+    success_url = reverse_lazy('controladoria:imovel_vendido_list')
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['nav_active'] = 'imoveis_vendidos'
+        ctx['page_title'] = f'Editar — {self.object.contrato_ajustado}'
+        return ctx
+
+    def form_valid(self, form):
+        self.object = form.save()
+        messages.success(self.request, 'Imóvel vendido atualizado com sucesso.')
+        return redirect(self.get_success_url())
+
+
+class ImovelVendidoDeleteView(ControladoriaLayoutMixin, DeleteView):
+    model = ImovelVendido
+    template_name = 'controladoria/confirm_delete.html'
+    success_url = reverse_lazy('controladoria:imovel_vendido_list')
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['nav_active'] = 'imoveis_vendidos'
+        ctx['page_title'] = 'Excluir imóvel vendido'
+        ctx['object_label'] = str(self.object)
+        ctx['cancel_url'] = reverse('controladoria:imovel_vendido_list')
+        return ctx
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Imóvel vendido excluído.')
+        return super().form_valid(form)
+
+
+class ImovelVendidoImportView(ControladoriaLayoutMixin, View):
+    template_name = 'controladoria/imovel_vendido_import.html'
+
+    def get(self, request):
+        return render(request, self.template_name, self._context(ImovelVendidoImportForm()))
+
+    def post(self, request):
+        form = ImovelVendidoImportForm(request.POST, request.FILES)
+        if not form.is_valid():
+            return render(request, self.template_name, self._context(form), status=400)
+
+        try:
+            resultado = importar_imoveis_vendidos(form.cleaned_data['arquivo'])
+        except ImovelVendidoImportError as exc:
+            messages.error(request, str(exc))
+            return render(request, self.template_name, self._context(form), status=400)
+
+        messages.success(
+            request,
+            (
+                f'Importação concluída: {resultado.criados} criados, '
+                f'{resultado.atualizados} atualizados, {resultado.ignorados} sem alteração.'
+            ),
+        )
+        return redirect('controladoria:imovel_vendido_list')
+
+    def _context(self, form):
+        return self.build_layout_context(
+            form=form,
+            nav_active='imoveis_vendidos',
+            page_title='Importar imóveis vendidos',
+        )
 
 
 class MedidaListView(ControladoriaLayoutMixin, ListView):

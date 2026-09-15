@@ -8,6 +8,7 @@ from controladoria.models import (
     ContaFinanceira,
     Empresa,
     ExcecaoLancamento,
+    ImovelVendido,
     LancamentoFinanceiro,
     Medida,
     RegraMedida,
@@ -189,6 +190,31 @@ class LancamentoFinanceiroAdmin(admin.ModelAdmin):
     )
     autocomplete_fields = ('conta', 'empreendimento', 'socio')
     date_hierarchy = 'data_competencia'
+
+
+@admin.register(ImovelVendido)
+class ImovelVendidoAdmin(admin.ModelAdmin):
+    list_display = (
+        'contrato_ajustado',
+        'data_venda',
+        'cod_empreendimento',
+        'cliente',
+        'situacao',
+        'valor_venda',
+        'comissao',
+        'competencia',
+        'atualizado_em',
+    )
+    list_filter = ('situacao', 'regra_comissao', 'cod_empreendimento')
+    search_fields = (
+        'contrato_ajustado',
+        'cliente',
+        'imovel',
+        'empreendimento_ajustado',
+        'corretor',
+        'imobiliaria',
+    )
+    date_hierarchy = 'data_venda'
 
 
 @admin.register(AjusteManual)

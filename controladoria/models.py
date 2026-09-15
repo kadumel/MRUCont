@@ -439,6 +439,40 @@ class LancamentoFinanceiro(models.Model):
             raise ValidationError({'valor': 'Informe um valor diferente de zero.'})
 
 
+class ImovelVendido(models.Model):
+    """Imóvel vendido importado da planilha padrão de comissão (aba Resumo)."""
+
+    empreendimento_ajustado = models.CharField(max_length=150, blank=True)
+    cod_empreendimento = models.CharField(max_length=20, blank=True)
+    data_venda = models.DateField(null=True, blank=True)
+    contrato_ajustado = models.CharField(max_length=40, unique=True)
+    situacao = models.CharField(max_length=40, blank=True)
+    imovel = models.CharField(max_length=200, blank=True)
+    cliente = models.CharField(max_length=200, blank=True)
+    valor_tabela = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    desconto = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    valor_venda = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    valor_liquidado = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    situacao_contrato = models.CharField(max_length=40, blank=True)
+    data_rescisao_imobiliaria = models.DateField(null=True, blank=True)
+    imobiliaria = models.CharField(max_length=150, blank=True)
+    corretor = models.CharField(max_length=150, blank=True)
+    regra_comissao = models.CharField(max_length=40, blank=True)
+    comissao = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    regra_valor = models.CharField(max_length=10, blank=True)
+    competencia = models.DateField(null=True, blank=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-data_venda', 'contrato_ajustado']
+        verbose_name = 'Imóvel Vendido'
+        verbose_name_plural = 'Imóveis Vendidos'
+
+    def __str__(self):
+        return f'{self.contrato_ajustado} — {self.cliente or self.imovel or "sem cliente"}'
+
+
 class Comissao(models.Model):
     """Comissão de parceria incluída para pagamento."""
 

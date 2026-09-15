@@ -1,0 +1,28 @@
+{% extends "controladoria/layout_app.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block page_heading %}{{ page_title }}{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">Envie o arquivo .xlsx e utilize a aba <strong>Resumo</strong>. Contratos já existentes serão atualizados.</p>{% endblock %}
+
+{% block content %}
+<section class="form-card glass-card">
+    <form method="post" enctype="multipart/form-data" class="entity-form" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+        <div class="alert alert--error">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="field{% if form.arquivo.errors %} field--error{% endif %}">
+            <label for="{{ form.arquivo.id_for_label }}">{{ form.arquivo.label }} *</label>
+            {{ form.arquivo }}
+            {% if form.arquivo.help_text %}<p class="field-help">{{ form.arquivo.help_text }}</p>{% endif %}
+            {% for error in form.arquivo.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+        </div>
+
+        <div class="form-actions">
+            <a href="{% url 'controladoria:imovel_vendido_list' %}" class="btn btn--ghost">Cancelar</a>
+            <button type="submit" class="btn btn--primary">Importar</button>
+        </div>
+    </form>
+</section>
+{% endblock %}

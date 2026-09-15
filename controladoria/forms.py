@@ -11,6 +11,7 @@ from controladoria.models import (
     Empresa,
     ExcecaoLancamento,
     FuncaoAgregacao,
+    ImovelVendido,
     LancamentoFinanceiro,
     Medida,
     OperadorFiltro,
@@ -360,6 +361,112 @@ class LancamentoFinanceiroForm(forms.ModelForm):
         if valor == 0:
             raise ValidationError('Informe um valor diferente de zero.')
         return valor
+
+
+class ImovelVendidoForm(forms.ModelForm):
+    class Meta:
+        model = ImovelVendido
+        fields = [
+            'empreendimento_ajustado',
+            'cod_empreendimento',
+            'data_venda',
+            'contrato_ajustado',
+            'situacao',
+            'imovel',
+            'cliente',
+            'valor_tabela',
+            'desconto',
+            'valor_venda',
+            'valor_liquidado',
+            'situacao_contrato',
+            'data_rescisao_imobiliaria',
+            'imobiliaria',
+            'corretor',
+            'regra_comissao',
+            'comissao',
+            'regra_valor',
+            'competencia',
+        ]
+        widgets = {
+            'empreendimento_ajustado': forms.TextInput(attrs={'placeholder': 'Empreendimento ajustado'}),
+            'cod_empreendimento': forms.TextInput(attrs={'placeholder': 'Ex.: CPA'}),
+            'data_venda': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}),
+            'contrato_ajustado': forms.TextInput(attrs={'placeholder': 'Ex.: CPA0176-0'}),
+            'situacao': forms.TextInput(attrs={'placeholder': 'Ativo, Rescindido...'}),
+            'imovel': forms.TextInput(attrs={'placeholder': 'Identificação do imóvel'}),
+            'cliente': forms.TextInput(attrs={'placeholder': 'Nome do cliente'}),
+            'valor_tabela': forms.NumberInput(attrs={'step': '0.01'}),
+            'desconto': forms.NumberInput(attrs={'step': '0.01'}),
+            'valor_venda': forms.NumberInput(attrs={'step': '0.01'}),
+            'valor_liquidado': forms.NumberInput(attrs={'step': '0.01'}),
+            'situacao_contrato': forms.TextInput(),
+            'data_rescisao_imobiliaria': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}),
+            'imobiliaria': forms.TextInput(),
+            'corretor': forms.TextInput(),
+            'regra_comissao': forms.TextInput(attrs={'placeholder': 'Considerar / Desconsiderar'}),
+            'comissao': forms.NumberInput(attrs={'step': '0.01'}),
+            'regra_valor': forms.TextInput(attrs={'placeholder': 'Sim / Não'}),
+            'competencia': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}),
+        }
+        labels = {
+            'empreendimento_ajustado': 'Empreendimento ajustado',
+            'cod_empreendimento': 'Cód. empreendimento',
+            'data_venda': 'Data da venda',
+            'contrato_ajustado': 'Contrato ajustado',
+            'situacao': 'Situação',
+            'imovel': 'Imóvel',
+            'cliente': 'Cliente',
+            'valor_tabela': 'Valor tabela',
+            'desconto': 'Desconto',
+            'valor_venda': 'Valor venda',
+            'valor_liquidado': 'Valor liquidado',
+            'situacao_contrato': 'Situação do contrato',
+            'data_rescisao_imobiliaria': 'Data de rescisão imobiliária',
+            'imobiliaria': 'Imobiliária',
+            'corretor': 'Corretor',
+            'regra_comissao': 'Regra comissão',
+            'comissao': 'Comissão',
+            'regra_valor': 'Regra valor',
+            'competencia': 'Competência',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name in ('data_venda', 'data_rescisao_imobiliaria', 'competencia'):
+            self.fields[name].input_formats = ['%Y-%m-%d']
+        for field in self.fields.values():
+            field.widget.attrs.setdefault('class', 'input')
+
+    def clean_contrato_ajustado(self):
+        contrato = (self.cleaned_data.get('contrato_ajustado') or '').strip()
+        if not contrato:
+            raise ValidationError('Informe o contrato ajustado.')
+        duplicado = ImovelVendido.objects.filter(contrato_ajustado__iexact=contrato)
+        if self.instance.pk:
+            duplicado = duplicado.exclude(pk=self.instance.pk)
+        if duplicado.exists():
+            raise ValidationError('Já existe um imóvel vendido com este contrato ajustado.')
+        return contrato
+
+
+class ImovelVendidoImportForm(forms.Form):
+    arquivo = forms.FileField(
+        label='Planilha Excel',
+        help_text='Arquivo .xlsx com a aba Resumo (planilha padrão de comissão).',
+        widget=forms.FileInput(attrs={
+            'accept': '.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'class': 'input',
+        }),
+    )
+
+    def clean_arquivo(self):
+        arquivo = self.cleaned_data.get('arquivo')
+        if not arquivo:
+            raise ValidationError('Selecione um arquivo para importar.')
+        nome = (arquivo.name or '').lower()
+        if not nome.endswith('.xlsx'):
+            raise ValidationError('Envie um arquivo Excel no formato .xlsx.')
+        return arquivo
 
 
 class MedidaForm(forms.ModelForm):

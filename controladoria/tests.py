@@ -93,6 +93,13 @@ class NavSidebarContextTests(TestCase):
         self.assertTrue(ctx['nav_cadastros_expanded'])
         self.assertFalse(ctx['nav_regras_expanded'])
 
+    def test_expande_menu_movimentos_para_imoveis_vendidos(self):
+        ctx = {'nav_active': 'imoveis_vendidos'}
+        apply_nav_sidebar_context(ctx)
+        self.assertTrue(ctx['nav_movimentos_expanded'])
+        self.assertFalse(ctx['nav_cadastros_expanded'])
+        self.assertFalse(ctx['nav_regras_expanded'])
+
 
 class ConsultaBaseTests(TestCase):
     def test_campo_filtravel_e_sql(self):

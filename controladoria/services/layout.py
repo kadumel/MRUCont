@@ -18,6 +18,7 @@ REGRAS_NAV_ITEMS = frozenset({
 
 MOVIMENTOS_NAV_ITEMS = frozenset({
     'lancamentos',
+    'imoveis_vendidos',
 })
 
 

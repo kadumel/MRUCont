@@ -36,6 +36,12 @@ urlpatterns = [
     path('movimentos/lancamentos/<int:pk>/editar/', views.LancamentoFinanceiroUpdateView.as_view(), name='lancamento_edit'),
     path('movimentos/lancamentos/<int:pk>/excluir/', views.LancamentoFinanceiroDeleteView.as_view(), name='lancamento_delete'),
 
+    path('movimentos/imoveis-vendidos/', views.ImovelVendidoListView.as_view(), name='imovel_vendido_list'),
+    path('movimentos/imoveis-vendidos/novo/', views.ImovelVendidoCreateView.as_view(), name='imovel_vendido_create'),
+    path('movimentos/imoveis-vendidos/importar/', views.ImovelVendidoImportView.as_view(), name='imovel_vendido_import'),
+    path('movimentos/imoveis-vendidos/<int:pk>/editar/', views.ImovelVendidoUpdateView.as_view(), name='imovel_vendido_edit'),
+    path('movimentos/imoveis-vendidos/<int:pk>/excluir/', views.ImovelVendidoDeleteView.as_view(), name='imovel_vendido_delete'),
+
     path('medidas/', RedirectView.as_view(pattern_name='controladoria:medida_list', permanent=False)),
     path('medidas/nova/', views.MedidaCreateView.as_view(), name='medida_create'),
     path('medidas/<int:pk>/editar/', views.MedidaUpdateView.as_view(), name='medida_edit'),
